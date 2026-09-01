@@ -143,14 +143,6 @@ h1, .brand {
   border: 1px solid var(--line);
 }
 
-.avatar-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #f2f2f2;
-  color: var(--text-muted);
-}
-
 .bio {
   margin: 1.5rem 0;
   color: var(--text-muted);
