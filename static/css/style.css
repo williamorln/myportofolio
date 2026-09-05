@@ -190,6 +190,58 @@ h1, .brand {
   margin-bottom: 2rem;
 }
 
+/* Skills */
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.75rem 2.5rem;
+}
+
+.skill-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+}
+
+.skill-heading h3 {
+  font-size: 0.95rem;
+}
+
+.skill-level {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.skill-bar-track {
+  width: 100%;
+  height: 10px;
+  background-color: var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+/* Bar renders at its final --level width immediately; scaleX(0 -> 1)
+   animates it filling in from the left without JS. */
+.skill-bar-fill {
+  width: var(--level);
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+  transform-origin: left;
+  animation: fill-bar 1s ease-out forwards;
+}
+
+@keyframes fill-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 /* Timeline heading (shared by Experience list items) */
 .timeline-heading {
   display: flex;
@@ -338,5 +390,10 @@ h1, .brand {
 
   .project-grid {
     grid-template-columns: 1fr;
+  }
+
+  .skill-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 }
