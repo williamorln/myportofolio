@@ -7,7 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -15,10 +15,11 @@
     <div class="container">
       <a href="#" class="brand">William Orlando</a>
       <nav>
-        <a href="#profile">Profile</a>
+        <a href="#about">About</a>
         <a href="#skills">Skills</a>
         <a href="#experience">Experience</a>
         <a href="#projects">Projects</a>
+        <a href="#contact">Contact</a>
       </nav>
       <input type="checkbox" id="theme-toggle" class="theme-toggle-input">
       <label for="theme-toggle" class="theme-toggle-label" aria-label="Toggle dark mode">
@@ -28,11 +29,17 @@
   </header>
 
   <main>
-    <section class="hero" id="profile">
+    <section class="hero" id="home">
       <div class="container hero-grid">
         <div class="hero-identity">
-          <p class="hero-kicker">Sistem Informasi, Fakultas Ilmu Komputer, Universitas Indonesia</p>
+          <span class="availability-badge"><span class="availability-dot" aria-hidden="true"></span>Available for Internship / Collaboration</span>
+          <p class="hero-kicker">Information Systems Student, Universitas Indonesia</p>
           <h1>William Orlando</h1>
+          <div class="role-rotator" aria-hidden="true">
+            <span>Information Systems Student</span>
+            <span>Aspiring AI Engineer</span>
+            <span>Team &amp; Project Coordinator</span>
+          </div>
         </div>
 
         <div class="hero-photo">
@@ -42,21 +49,26 @@
         </div>
 
         <div class="hero-details">
-          <p class="bio">Mahasiswa Sistem Informasi di Universitas Indonesia yang punya growth mindset dan disiplin tinggi dalam menjalani setiap tanggung jawab. Aktif di berbagai organisasi dan kepanitiaan kampus, sekaligus sedang membangun kemampuan teknis lewat mata kuliah Pemrograman Berbasis Platform.</p>
-          <dl class="meta-list">
-            <div>
-              <dt>NPM</dt>
-              <dd>2506657390</dd>
-            </div>
-            <div>
-              <dt>Program</dt>
-              <dd>Sistem Informasi</dd>
-            </div>
-          </dl>
-          <div class="social-links">
-            <a class="social-link" href="https://github.com/williamorln" target="_blank" rel="noopener">GitHub</a>
-            <a class="social-link" href="mailto:adakanduo4@gmail.com">Email</a>
+          <p class="bio">Building digital solutions through technology, leadership, and problem solving.</p>
+          <div class="hero-actions">
+            <a href="#projects" class="btn btn-primary">View Projects</a>
+            <a href="#contact" class="btn btn-secondary">Contact Me</a>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="about">
+      <div class="container narrow">
+        <h2>About</h2>
+        <p class="about-text">I'm an Information Systems student at Universitas Indonesia (Fasilkom UI), with a growing focus on data science and a long-term goal of becoming an AI Engineer. Alongside coursework, I spend most of my time building small, practical tools that solve real problems I run into &mdash; whether that's automating tedious student workflows or experimenting with data models. Outside of the technical side, I've also picked up a fair amount of experience in organizational and people-facing roles, from mentoring programs to large-scale event work, which has shaped how I approach collaboration and communication in any project I take on.</p>
+
+        <div class="education-card">
+          <div>
+            <h3>Universitas Indonesia &mdash; Faculty of Computer Science (Fasilkom)</h3>
+            <p class="education-meta">Undergraduate, Information Systems</p>
+          </div>
+          <span class="education-period">Aug 2025 &ndash; Present</span>
         </div>
       </div>
     </section>
@@ -64,41 +76,33 @@
     <section class="section section-alt" id="skills">
       <div class="container">
         <h2>Skills</h2>
-        <div class="skill-grid">
-          <div class="skill-item">
-            <div class="skill-heading">
-              <h3>HTML5 &amp; CSS3</h3>
-              <span class="skill-level">85%</span>
-            </div>
-            <div class="skill-bar-track">
-              <div class="skill-bar-fill" style="--level: 85%"></div>
-            </div>
-          </div>
-          <div class="skill-item">
-            <div class="skill-heading">
-              <h3>Python &amp; Django</h3>
-              <span class="skill-level">70%</span>
-            </div>
-            <div class="skill-bar-track">
-              <div class="skill-bar-fill" style="--level: 70%"></div>
+        <div class="skill-categories">
+          <div class="skill-category">
+            <h3>Technical</h3>
+            <div class="tag-list">
+              <span class="tag">Java</span>
+              <span class="tag">Python</span>
+              <span class="tag">Web Development (HTML5, CSS3, Django)</span>
+              <span class="tag">Bot Development &amp; Automation</span>
+              <span class="tag">Data Analysis (Excel, Pandas)</span>
             </div>
           </div>
-          <div class="skill-item">
-            <div class="skill-heading">
-              <h3>Team Leadership &amp; Coordination</h3>
-              <span class="skill-level">90%</span>
-            </div>
-            <div class="skill-bar-track">
-              <div class="skill-bar-fill" style="--level: 90%"></div>
+          <div class="skill-category">
+            <h3>Professional</h3>
+            <div class="tag-list">
+              <span class="tag">Leadership</span>
+              <span class="tag">Team Coordination</span>
+              <span class="tag">Stakeholder Management</span>
+              <span class="tag">SOP Development</span>
+              <span class="tag">Event Coordination</span>
+              <span class="tag">Communication &amp; Adaptability</span>
             </div>
           </div>
-          <div class="skill-item">
-            <div class="skill-heading">
-              <h3>Public Speaking &amp; Client Relations</h3>
-              <span class="skill-level">80%</span>
-            </div>
-            <div class="skill-bar-track">
-              <div class="skill-bar-fill" style="--level: 80%"></div>
+          <div class="skill-category">
+            <h3>Languages</h3>
+            <div class="tag-list">
+              <span class="tag">Indonesian &mdash; Native</span>
+              <span class="tag">English &mdash; Professional Working Proficiency</span>
             </div>
           </div>
         </div>
@@ -108,159 +112,280 @@
     <section class="section" id="experience">
       <div class="container">
         <h2>Experience</h2>
-
-        <details class="experience-group" open>
-          <summary><span class="chevron" aria-hidden="true">&#9656;</span> Organizational Experience</summary>
-          <ul class="experience-list">
-            <li>
-              <div class="timeline-heading">
-                <h3>VPIC of Mentor Division &ndash; DDP0</h3>
+        <ol class="timeline">
+          <li class="timeline-item">
+            <span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-content">
+              <div class="timeline-top">
+                <span class="timeline-tag">Organizational</span>
                 <span class="timeline-date">Apr 2026 &ndash; Present</span>
               </div>
-              <p>Developed structured SOPs and mentoring frameworks that ensured consistent, high-quality guidance across the mentoring team.</p>
-            </li>
-            <li>
-              <div class="timeline-heading">
-                <h3>Staff of Academy Division (DSAI) &ndash; COMPFEST</h3>
+              <h3>VPIC of Mentor Division &ndash; DDP0</h3>
+              <p>Developed structured SOPs and mentoring frameworks to ensure consistent, high-quality guidance across the mentoring team.</p>
+            </div>
+          </li>
+          <li class="timeline-item">
+            <span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-content">
+              <div class="timeline-top">
+                <span class="timeline-tag">Organizational</span>
                 <span class="timeline-date">Apr 2026 &ndash; Present</span>
               </div>
-              <p>Managed relations with industry mentors and lecturers and oversaw real-time event operations, keeping all technical and logistical sessions running smoothly.</p>
-            </li>
-            <li>
-              <div class="timeline-heading">
-                <h3>Academic &amp; Teaching Staff &ndash; BETIS Fasilkom UI</h3>
-                <span class="timeline-date">Jan 2026 &ndash; Present</span>
+              <h3>Staff of Academy Division (DSAI) &ndash; COMPFEST</h3>
+              <p>Managed relations with industry mentors and lecturers, designed the participant selection framework, and oversaw real-time event operations to keep technical and logistical sessions running smoothly.</p>
+            </div>
+          </li>
+          <li class="timeline-item">
+            <span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-content">
+              <div class="timeline-top">
+                <span class="timeline-tag">Organizational</span>
+                <span class="timeline-date">Jan 2026 &ndash; Completed</span>
               </div>
+              <h3>Academic &amp; Teaching Staff &ndash; BETIS Fasilkom UI</h3>
               <p>Simplified complex course material into structured teaching modules and delivered learning sessions that helped students grasp difficult topics more easily.</p>
-            </li>
-            <li>
-              <div class="timeline-heading">
-                <h3>Business Development Staff &ndash; Open House Fasilkom UI</h3>
+            </div>
+          </li>
+          <li class="timeline-item">
+            <span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-content">
+              <div class="timeline-top">
+                <span class="timeline-tag">Organizational</span>
                 <span class="timeline-date">Sep 2025 &ndash; Dec 2025</span>
               </div>
+              <h3>Business Development Staff &ndash; Open House Fasilkom UI</h3>
               <p>Coordinated with external vendors and liaised between the committee and partners to keep event logistics running without major issues.</p>
-            </li>
-          </ul>
-        </details>
-
-        <details class="experience-group">
-          <summary><span class="chevron" aria-hidden="true">&#9656;</span> Freelance &amp; Event Experience</summary>
-          <ul class="experience-list">
-            <li>
-              <div class="timeline-heading">
-                <h3>SPB &ndash; Kahf (Paragon Corp) at PRJ 2026</h3>
+            </div>
+          </li>
+          <li class="timeline-item">
+            <span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-content">
+              <div class="timeline-top">
+                <span class="timeline-tag">Freelance &amp; Event</span>
+                <span class="timeline-date">PRJ 2026</span>
               </div>
+              <h3>SPB &ndash; Kahf (Paragon Corp)</h3>
               <p>Engaged directly with event visitors to promote brand products in a high-traffic, fast-paced environment, successfully driving on-site customer interest.</p>
-            </li>
-            <li>
-              <div class="timeline-heading">
-                <h3>Talent &amp; SPB &ndash; Byon Combat (Kahf)</h3>
+            </div>
+          </li>
+          <li class="timeline-item">
+            <span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-content">
+              <div class="timeline-top">
+                <span class="timeline-tag">Freelance &amp; Event</span>
               </div>
-              <p>Represented the brand as talent and SPB at the Byon Combat event, engaging directly with attendees.</p>
-            </li>
-            <li>
-              <div class="timeline-heading">
-                <h3>Usher &ndash; Mitski &amp; Bernadya Concerts</h3>
+              <h3>Talent &amp; SPB &ndash; Byon Combat (Kahf)</h3>
+              <p>Represented the brand as talent and SPB, engaging directly with attendees at the event.</p>
+            </div>
+          </li>
+          <li class="timeline-item">
+            <span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-content">
+              <div class="timeline-top">
+                <span class="timeline-tag">Freelance &amp; Event</span>
               </div>
+              <h3>Usher &ndash; Mitski Live in Jakarta &amp; Bernadya Concert</h3>
               <p>Managed audience flow and coordinated with the event team under time pressure to keep both concerts running smoothly for attendees.</p>
-            </li>
-            <li>
-              <div class="timeline-heading">
-                <h3>Usher / SPB / Talent &ndash; JSD Blok M Festival (Prabu Indonesia)</h3>
+            </div>
+          </li>
+          <li class="timeline-item">
+            <span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-content">
+              <div class="timeline-top">
+                <span class="timeline-tag">Freelance &amp; Event</span>
               </div>
+              <h3>Usher / SPB / Talent &ndash; JSD Blok M Festival (Prabu Indonesia)</h3>
               <p>Took on multiple rotating roles across audience management, brand promotion, and on-stage duties, adapting quickly as event needs shifted.</p>
-            </li>
-          </ul>
-        </details>
-
-        <details class="experience-group">
-          <summary><span class="chevron" aria-hidden="true">&#9656;</span> Voluntary Experience</summary>
-          <ul class="experience-list">
-            <li>
-              <div class="timeline-heading">
-                <h3>Panti Werdha Muslim Rumah Oma</h3>
+            </div>
+          </li>
+          <li class="timeline-item">
+            <span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-content">
+              <div class="timeline-top">
+                <span class="timeline-tag">Volunteer</span>
               </div>
+              <h3>Panti Werdha Muslim Rumah Oma</h3>
               <p>Worked as field crew preparing equipment and logistics, while engaging the elderly residents through conversation and humor to keep the event warm and well-run.</p>
-            </li>
-            <li>
-              <div class="timeline-heading">
-                <h3>Panti Asuhan Hati Suci (Open Donation Event)</h3>
+            </div>
+          </li>
+          <li class="timeline-item">
+            <span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-content">
+              <div class="timeline-top">
+                <span class="timeline-tag">Volunteer</span>
               </div>
-              <p>Volunteered as a performer.</p>
-            </li>
-            <li>
-              <div class="timeline-heading">
-                <h3>Smandu Idol Season 5</h3>
+              <h3>Panti Asuhan Hati Suci (Open Donation Event)</h3>
+              <p>Volunteered as a performer to support the fundraising event.</p>
+            </div>
+          </li>
+          <li class="timeline-item">
+            <span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-content">
+              <div class="timeline-top">
+                <span class="timeline-tag">Volunteer</span>
               </div>
+              <h3>Smandu Idol Season 5</h3>
               <p>Volunteered as a performer.</p>
-            </li>
-            <li>
-              <div class="timeline-heading">
-                <h3>Asadha Event &ndash; Vihara Gunadharma</h3>
+            </div>
+          </li>
+          <li class="timeline-item">
+            <span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-content">
+              <div class="timeline-top">
+                <span class="timeline-tag">Volunteer</span>
               </div>
+              <h3>Asadha Event &ndash; Vihara Gunadharma</h3>
               <p>Volunteered as a performer.</p>
-            </li>
-          </ul>
-        </details>
-
-        <details class="experience-group">
-          <summary><span class="chevron" aria-hidden="true">&#9656;</span> Business Experience</summary>
-          <ul class="experience-list">
-            <li>
-              <div class="timeline-heading">
-                <h3>Self-Started Floral Business</h3>
+            </div>
+          </li>
+          <li class="timeline-item">
+            <span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-content">
+              <div class="timeline-top">
+                <span class="timeline-tag">Business</span>
                 <span class="timeline-date">Sep 2023 &ndash; Present</span>
               </div>
-              <p>Managed end-to-end business operations including product assembly and order fulfillment, executed social media marketing to build brand awareness, and maintained direct communication with customers to ensure service quality.</p>
-            </li>
-          </ul>
-        </details>
+              <h3>Self-Started Floral Business</h3>
+              <p>Built and run an independent floral business end-to-end &mdash; handling product assembly and order fulfillment, executing social media marketing to build brand awareness, and maintaining direct communication with customers to ensure service quality.</p>
+            </div>
+          </li>
+        </ol>
       </div>
     </section>
 
     <section class="section section-alt" id="projects">
       <div class="container">
         <h2>Projects</h2>
-        <div class="project-grid">
-          <article class="project-card">
-            <h3>Personal Portfolio Website</h3>
-            <p class="project-tag">Django &middot; HTML5 &middot; CSS3</p>
-            <p>Website portofolio pribadi ini sendiri, dibangun dari nol lewat rangkaian Tutorial dan Tugas mata kuliah Pemrograman Berbasis Platform.</p>
-          </article>
-          <article class="project-card">
-            <h3>QRMenuKu &ndash; Business Plan &amp; Product Development</h3>
-            <p class="project-tag">Sep 2025 &ndash; Nov 2025</p>
-            <p>Merancang sistem digital ordering untuk UMKM F&amp;B, lengkap dengan dashboard analitik dan integrasi payment gateway, serta model bisnis dan alur operasional untuk efisiensi transaksi.</p>
-          </article>
-          <article class="project-card">
-            <h3>Chatbot Prototype</h3>
-            <p>Prototipe chatbot untuk eksplorasi kebutuhan automasi percakapan.</p>
-          </article>
-          <article class="project-card">
+        <div class="project-showcase">
+          <article class="project-showcase-card">
             <h3>SCELE Notifier</h3>
-            <p>Alat notifikasi otomatis untuk memantau pembaruan di platform SCELE.</p>
+            <div class="project-block">
+              <span class="project-label">Problem</span>
+              <p>SCELE, Fasilkom UI's course platform, doesn't proactively notify students about new assignments or forum activity &mdash; and its RSS feeds are disabled.</p>
+            </div>
+            <div class="project-block">
+              <span class="project-label">Solution</span>
+              <p>Built a Telegram bot that logs into SCELE via session scraping, monitors the Timeline and forum activity, and pushes real-time notifications &mdash; reverse-engineered SCELE's internal AJAX endpoint from scratch to make it work.</p>
+            </div>
+            <p class="project-tech">Python &middot; Telegram Bot API &middot; Web Scraping</p>
           </article>
-          <article class="project-card">
-            <h3>Company Workflow System</h3>
-            <p>Prototipe sistem alur kerja perusahaan untuk menyederhanakan proses operasional internal.</p>
+
+          <article class="project-showcase-card">
+            <h3>Life OS</h3>
+            <div class="project-block">
+              <span class="project-label">Problem</span>
+              <p>Academic reminders alone don't cover the rest of daily planning &mdash; tasks, goals, and reminders end up scattered across different tools.</p>
+            </div>
+            <div class="project-block">
+              <span class="project-label">Solution</span>
+              <p>Expanded the SCELE Notifier into a broader personal assistant bot covering reminders, goal tracking, and daily planning as a lightweight, all-in-one productivity system.</p>
+            </div>
+            <p class="project-tech">Python &middot; Telegram Bot API</p>
           </article>
-          <article class="project-card">
-            <h3>Auto-Clipping Tool</h3>
-            <p>Proyek untuk otomasi pembuatan cuplikan (clip) video secara otomatis.</p>
+
+          <article class="project-showcase-card">
+            <h3>Omnichannel AI Chatbot</h3>
+            <div class="project-block">
+              <span class="project-label">Problem</span>
+              <p>Businesses need a chatbot that isn't locked into a single messaging platform.</p>
+            </div>
+            <div class="project-block">
+              <span class="project-label">Solution</span>
+              <p>Built a chatbot system with an extensive feature set designed to operate across multiple messaging channels, rather than being tied to one.</p>
+            </div>
+            <p class="project-tech">Python &middot; Chatbot / NLP Tooling</p>
           </article>
-          <article class="project-card">
-            <h3>Data Analysis Practice (Kaggle)</h3>
-            <p>Latihan eksplorasi dan analisis berbagai dataset publik di Kaggle.</p>
+
+          <article class="project-showcase-card">
+            <h3>PO Workflow System &ndash; Prabu</h3>
+            <div class="project-block">
+              <span class="project-label">Problem</span>
+              <p>Prabu, a shoe brand, managed its purchase order process manually and in a fragmented way.</p>
+            </div>
+            <div class="project-block">
+              <span class="project-label">Solution</span>
+              <p>Designed and built a workflow system to manage the PO process end-to-end, turning it into a structured, repeatable system.</p>
+            </div>
+            <p class="project-tech">Workflow &amp; System Design</p>
           </article>
+
+          <article class="project-showcase-card">
+            <h3>Clipping Automation</h3>
+            <div class="project-block">
+              <span class="project-label">Problem</span>
+              <p>A content clipping business needed to cut down on repetitive manual work in processing clipped content at scale.</p>
+            </div>
+            <div class="project-block">
+              <span class="project-label">Solution</span>
+              <p>Built automation tooling to streamline the repetitive parts of managing and processing clipped content.</p>
+            </div>
+            <p class="project-tech">Automation Scripting</p>
+          </article>
+
+          <article class="project-showcase-card">
+            <h3>QRMenuKu &ndash; Business Plan &amp; Product Development</h3>
+            <div class="project-block">
+              <span class="project-label">Problem</span>
+              <p>Traditional F&amp;B SME ordering processes are slow and inefficient.</p>
+            </div>
+            <div class="project-block">
+              <span class="project-label">Solution</span>
+              <p>Collaborated in a team to design a digital ordering system with an analytics dashboard and payment gateway integration, contributing to the business model and operational workflow design.</p>
+            </div>
+            <p class="project-tech">Product &amp; Business Design</p>
+          </article>
+
+          <article class="project-showcase-card">
+            <h3>Personal Portfolio Website</h3>
+            <div class="project-block">
+              <span class="project-label">Problem</span>
+              <p>Needed a live, continuously-updated portfolio to showcase skills and experience for academic and professional purposes.</p>
+            </div>
+            <div class="project-block">
+              <span class="project-label">Solution</span>
+              <p>Built and iterated on this site from scratch across weekly assignments for the Pemrograman Berbasis Platform course.</p>
+            </div>
+            <p class="project-tech">Django &middot; HTML5 &middot; CSS3</p>
+          </article>
+        </div>
+
+        <div class="ds-practice">
+          <h3>Data Science Practice</h3>
+          <p class="ds-practice-intro">Foundational learning exercises supporting my interest in data science and AI:</p>
+          <div class="tag-list">
+            <span class="tag">Titanic Survival Prediction</span>
+            <span class="tag">House Pricing Prediction</span>
+            <span class="tag">Digit Recognizer</span>
+            <span class="tag">Customer Relevance Model</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section contact-section" id="contact">
+      <div class="container narrow">
+        <h2>Let's build something together.</h2>
+        <p class="contact-lead">Open to internship, collaboration, or just a chat about technology and projects.</p>
+        <div class="contact-links">
+          <a class="btn btn-primary" href="mailto:adakanduo4@gmail.com">Email Me</a>
+          <a class="btn btn-secondary" href="https://github.com/williamorln" target="_blank" rel="noopener">GitHub</a>
         </div>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="container">
-      <p>&copy; 2026 William Orlando &mdash; Universitas Indonesia</p>
+    <div class="container footer-grid">
+      <div>
+        <p class="footer-name">William Orlando</p>
+        <p class="footer-meta">Information Systems &middot; Universitas Indonesia &middot; NPM 2506657390</p>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/williamorln" target="_blank" rel="noopener">GitHub</a>
+        <a href="mailto:adakanduo4@gmail.com">Email</a>
+      </div>
     </div>
+    <p class="footer-copyright">&copy; 2026 William Orlando</p>
   </footer>
 </body>
 </html>
