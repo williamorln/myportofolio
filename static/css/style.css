@@ -48,7 +48,7 @@ main section[id] {
 
 h1, h2, h3 {
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .container {
@@ -457,7 +457,7 @@ h1, h2, h3 {
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   color: var(--accent);
 }
 
@@ -511,7 +511,7 @@ h1, h2, h3 {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0;
   color: var(--accent);
   margin-bottom: 0.25rem;
 }
@@ -610,6 +610,88 @@ h1, h2, h3 {
   text-align: center;
   font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+/* Dynamic Experience page */
+.experience-section {
+  min-height: calc(100vh - 210px);
+  padding: 4rem 0 5rem;
+  border-top: 1px solid var(--line);
+}
+
+.section-kicker {
+  color: var(--accent-dark);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.experience-section h1 {
+  margin: 0.4rem 0 1.5rem;
+  font-size: 2rem;
+}
+
+.experience-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.experience-card {
+  overflow: hidden;
+  background-color: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.experience-thumbnail {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-bottom: 1px solid var(--line);
+}
+
+.experience-card-body {
+  padding: 1.25rem;
+}
+
+.experience-category {
+  color: var(--accent-dark);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.experience-card h2 {
+  margin: 0.5rem 0;
+  font-size: 1.25rem;
+}
+
+.experience-description,
+.empty-state {
+  color: var(--text-muted);
+}
+
+.experience-status {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.experience-status-ongoing {
+  color: #16803c;
+}
+
+body:has(#theme-toggle:checked) .experience-status-ongoing {
+  color: #55d98a;
+}
+
+.site-header nav a[aria-current="page"] {
+  color: var(--ink);
+  font-weight: 700;
 }
 
 /* Responsive */

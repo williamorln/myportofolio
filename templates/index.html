@@ -1,23 +1,25 @@
+{% load static %}
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>William Orlando - Portfolio</title>
+  <title>{{ name }} - Portfolio</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
   <header class="site-header">
     <div class="container">
-      <a href="#" class="brand">William Orlando</a>
+      <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
       <nav>
+        <a href="{% url 'main:show_main' %}">Profile</a>
         <a href="#about">About</a>
         <a href="#skills">Skills</a>
-        <a href="#experience">Experience</a>
+        <a href="{% url 'main:show_experience' %}">Experience</a>
         <a href="#projects">Projects</a>
         <a href="#contact">Contact</a>
       </nav>
@@ -34,7 +36,7 @@
         <div class="hero-identity">
           <span class="availability-badge"><span class="availability-dot" aria-hidden="true"></span>Available for Internship / Collaboration</span>
           <p class="hero-kicker">Information Systems Student, Universitas Indonesia</p>
-          <h1>William Orlando</h1>
+          <h1>{{ name }}</h1>
           <div class="role-rotator" aria-hidden="true">
             <span>Information Systems Student</span>
             <span>Aspiring AI Engineer</span>
@@ -44,12 +46,12 @@
 
         <div class="hero-photo">
           <div class="photo-block">
-            <img class="avatar" src="/static/img/william-orlando.jpg" alt="Photo of William Orlando">
+            <img class="avatar" src="{% static 'img/william-orlando.jpg' %}" alt="Photo of {{ name }}">
           </div>
         </div>
 
         <div class="hero-details">
-          <p class="bio">Building digital solutions through technology, leadership, and problem solving.</p>
+          <p class="bio">{{ bio }}</p>
           <div class="hero-actions">
             <a href="#projects" class="btn btn-primary">View Projects</a>
             <a href="#contact" class="btn btn-secondary">Contact Me</a>
@@ -106,150 +108,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </section>
-
-    <section class="section" id="experience">
-      <div class="container">
-        <h2>Experience</h2>
-        <ol class="timeline">
-          <li class="timeline-item">
-            <span class="timeline-marker" aria-hidden="true"></span>
-            <div class="timeline-content">
-              <div class="timeline-top">
-                <span class="timeline-tag">Organizational</span>
-                <span class="timeline-date">Apr 2026 &ndash; Present</span>
-              </div>
-              <h3>VPIC of Mentor Division &ndash; DDP0</h3>
-              <p>Developed structured SOPs and mentoring frameworks to ensure consistent, high-quality guidance across the mentoring team.</p>
-            </div>
-          </li>
-          <li class="timeline-item">
-            <span class="timeline-marker" aria-hidden="true"></span>
-            <div class="timeline-content">
-              <div class="timeline-top">
-                <span class="timeline-tag">Organizational</span>
-                <span class="timeline-date">Apr 2026 &ndash; Present</span>
-              </div>
-              <h3>Staff of Academy Division (DSAI) &ndash; COMPFEST</h3>
-              <p>Managed relations with industry mentors and lecturers, designed the participant selection framework, and oversaw real-time event operations to keep technical and logistical sessions running smoothly.</p>
-            </div>
-          </li>
-          <li class="timeline-item">
-            <span class="timeline-marker" aria-hidden="true"></span>
-            <div class="timeline-content">
-              <div class="timeline-top">
-                <span class="timeline-tag">Organizational</span>
-                <span class="timeline-date">Jan 2026 &ndash; Completed</span>
-              </div>
-              <h3>Academic &amp; Teaching Staff &ndash; BETIS Fasilkom UI</h3>
-              <p>Simplified complex course material into structured teaching modules and delivered learning sessions that helped students grasp difficult topics more easily.</p>
-            </div>
-          </li>
-          <li class="timeline-item">
-            <span class="timeline-marker" aria-hidden="true"></span>
-            <div class="timeline-content">
-              <div class="timeline-top">
-                <span class="timeline-tag">Organizational</span>
-                <span class="timeline-date">Sep 2025 &ndash; Dec 2025</span>
-              </div>
-              <h3>Business Development Staff &ndash; Open House Fasilkom UI</h3>
-              <p>Coordinated with external vendors and liaised between the committee and partners to keep event logistics running without major issues.</p>
-            </div>
-          </li>
-          <li class="timeline-item">
-            <span class="timeline-marker" aria-hidden="true"></span>
-            <div class="timeline-content">
-              <div class="timeline-top">
-                <span class="timeline-tag">Freelance &amp; Event</span>
-                <span class="timeline-date">PRJ 2026</span>
-              </div>
-              <h3>SPB &ndash; Kahf (Paragon Corp)</h3>
-              <p>Engaged directly with event visitors to promote brand products in a high-traffic, fast-paced environment, successfully driving on-site customer interest.</p>
-            </div>
-          </li>
-          <li class="timeline-item">
-            <span class="timeline-marker" aria-hidden="true"></span>
-            <div class="timeline-content">
-              <div class="timeline-top">
-                <span class="timeline-tag">Freelance &amp; Event</span>
-              </div>
-              <h3>Talent &amp; SPB &ndash; Byon Combat (Kahf)</h3>
-              <p>Represented the brand as talent and SPB, engaging directly with attendees at the event.</p>
-            </div>
-          </li>
-          <li class="timeline-item">
-            <span class="timeline-marker" aria-hidden="true"></span>
-            <div class="timeline-content">
-              <div class="timeline-top">
-                <span class="timeline-tag">Freelance &amp; Event</span>
-              </div>
-              <h3>Usher &ndash; Mitski Live in Jakarta &amp; Bernadya Concert</h3>
-              <p>Managed audience flow and coordinated with the event team under time pressure to keep both concerts running smoothly for attendees.</p>
-            </div>
-          </li>
-          <li class="timeline-item">
-            <span class="timeline-marker" aria-hidden="true"></span>
-            <div class="timeline-content">
-              <div class="timeline-top">
-                <span class="timeline-tag">Freelance &amp; Event</span>
-              </div>
-              <h3>Usher / SPB / Talent &ndash; JSD Blok M Festival (Prabu Indonesia)</h3>
-              <p>Took on multiple rotating roles across audience management, brand promotion, and on-stage duties, adapting quickly as event needs shifted.</p>
-            </div>
-          </li>
-          <li class="timeline-item">
-            <span class="timeline-marker" aria-hidden="true"></span>
-            <div class="timeline-content">
-              <div class="timeline-top">
-                <span class="timeline-tag">Volunteer</span>
-              </div>
-              <h3>Panti Werdha Muslim Rumah Oma</h3>
-              <p>Worked as field crew preparing equipment and logistics, while engaging the elderly residents through conversation and humor to keep the event warm and well-run.</p>
-            </div>
-          </li>
-          <li class="timeline-item">
-            <span class="timeline-marker" aria-hidden="true"></span>
-            <div class="timeline-content">
-              <div class="timeline-top">
-                <span class="timeline-tag">Volunteer</span>
-              </div>
-              <h3>Panti Asuhan Hati Suci (Open Donation Event)</h3>
-              <p>Volunteered as a performer to support the fundraising event.</p>
-            </div>
-          </li>
-          <li class="timeline-item">
-            <span class="timeline-marker" aria-hidden="true"></span>
-            <div class="timeline-content">
-              <div class="timeline-top">
-                <span class="timeline-tag">Volunteer</span>
-              </div>
-              <h3>Smandu Idol Season 5</h3>
-              <p>Volunteered as a performer.</p>
-            </div>
-          </li>
-          <li class="timeline-item">
-            <span class="timeline-marker" aria-hidden="true"></span>
-            <div class="timeline-content">
-              <div class="timeline-top">
-                <span class="timeline-tag">Volunteer</span>
-              </div>
-              <h3>Asadha Event &ndash; Vihara Gunadharma</h3>
-              <p>Volunteered as a performer.</p>
-            </div>
-          </li>
-          <li class="timeline-item">
-            <span class="timeline-marker" aria-hidden="true"></span>
-            <div class="timeline-content">
-              <div class="timeline-top">
-                <span class="timeline-tag">Business</span>
-                <span class="timeline-date">Sep 2023 &ndash; Present</span>
-              </div>
-              <h3>Self-Started Floral Business</h3>
-              <p>Built and run an independent floral business end-to-end &mdash; handling product assembly and order fulfillment, executing social media marketing to build brand awareness, and maintaining direct communication with customers to ensure service quality.</p>
-            </div>
-          </li>
-        </ol>
       </div>
     </section>
 
@@ -377,15 +235,15 @@
   <footer class="site-footer">
     <div class="container footer-grid">
       <div>
-        <p class="footer-name">William Orlando</p>
-        <p class="footer-meta">Information Systems &middot; Universitas Indonesia &middot; NPM 2506657390</p>
+        <p class="footer-name">{{ name }}</p>
+        <p class="footer-meta">{{ study_program }} &middot; Universitas Indonesia &middot; NPM {{ npm }}</p>
       </div>
       <div class="footer-links">
         <a href="https://github.com/williamorln" target="_blank" rel="noopener">GitHub</a>
         <a href="mailto:adakanduo4@gmail.com">Email</a>
       </div>
     </div>
-    <p class="footer-copyright">&copy; 2026 William Orlando</p>
+    <p class="footer-copyright">&copy; 2026 {{ name }}</p>
   </footer>
 </body>
 </html>

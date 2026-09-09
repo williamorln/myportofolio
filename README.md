@@ -6,8 +6,9 @@ Proyek ini dikerjakan bertahap mengikuti rangkaian Tutorial dan Tugas Individu t
 
 ## Tech Stack
 
-- **Backend:** Django 6.1 (Python)
-- **Frontend:** HTML5 + CSS3 murni (belum pakai JavaScript maupun database untuk konten)
+- **Backend:** Django 5.2 (Python) dengan pola Model-View-Template
+- **Frontend:** Django Template Language, HTML5, dan CSS3
+- **Database:** SQLite untuk lokal dan PostgreSQL untuk deployment
 - **Static files:** WhiteNoise
 - **Deployment:** PWS (Platform-as-a-Service Fasilkom UI)
 
@@ -16,11 +17,18 @@ Proyek ini dikerjakan bertahap mengikuti rangkaian Tutorial dan Tugas Individu t
 ```
 myportofolio/
 ├── env/                  # virtual environment (tidak di-commit)
+├── main/                 # app profil dan experience
+│   ├── migrations/
+│   ├── models.py
+│   ├── tests.py
+│   ├── urls.py
+│   └── views.py
 ├── portofolio/            # package konfigurasi Django
 │   ├── settings.py
 │   ├── urls.py
 │   └── views.py
 ├── templates/
+│   ├── experience.html    # daftar experience dari database
 │   └── index.html         # halaman utama portofolio
 ├── static/
 │   ├── css/style.css
@@ -31,11 +39,12 @@ myportofolio/
 
 ## Progress Mingguan
 
-Proyek ini dibangun bertahap mengikuti rangkaian Tutorial dan Tugas Individu tiap minggu. Langkah instalasi & menjalankan project di bagian "Menjalankan Proyek Secara Lokal" di bawah berlaku sama untuk setiap minggu — belum ada dependency atau langkah setup tambahan selain yang sudah ada dari Tutorial 0, karena proyek masih di tahap HTML5/CSS3 murni (migrasi database baru untuk fitur dinamis baru akan mulai dari Tutorial 02/MVT).
+Proyek ini dibangun bertahap mengikuti rangkaian Tutorial dan Tugas Individu tiap minggu. Langkah instalasi dan menjalankan project tersedia pada bagian "Menjalankan Proyek Secara Lokal".
 
 - **Tutorial 0** (Agustus 2026) &mdash; Setup awal proyek Django, virtual environment, dan koneksi ke PWS Fasilkom UI.
 - **Tutorial 1** (31 Agustus 2026) &mdash; Halaman "About Me" pertama: struktur `views`/`urls`/`templates`/`static`, diisi data profil sendiri (nama, NPM, foto, bio).
 - **Individual Assignment 1** (7 September 2026) &mdash; Menambahkan section Skills, Experience, dan Projects, lalu redesign visual penuh ke gaya minimalis modern: dark mode toggle, sticky navigation, vertical timeline untuk Experience, dan format showcase Problem/Solution/Tech Stack untuk Projects.
+- **Tutorial 2** (9 September 2026) &mdash; Menerapkan pola MVT melalui app `main`, model `Experience`, context profil, halaman experience dinamis, routing aplikasi, migrasi database, dan unit test Django.
 
 ## Menjalankan Proyek Secara Lokal
 
