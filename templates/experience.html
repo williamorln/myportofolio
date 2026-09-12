@@ -36,40 +36,45 @@
         <p class="section-kicker">Perjalanan saya sejauh ini</p>
         <h1>Experience</h1>
 
-        <div class="experience-grid">
-          {% for experience in experience_list %}
-            <article class="experience-card">
-              {% if experience.thumbnail %}
-                <img
-                  class="experience-thumbnail"
-                  src="{{ experience.thumbnail }}"
-                  alt="Thumbnail {{ experience.title }}"
-                >
-              {% endif %}
-              <div class="experience-card-body">
-                <span class="experience-category">
-                  {{ experience.get_category_display }}
-                </span>
-                <h2>{{ experience.title }}</h2>
-                <p class="experience-description">
-                  {{ experience.description }}
-                </p>
+        {% regroup experience_list by get_category_display as experience_groups %}
+        {% for group in experience_groups %}
+          <div class="experience-group">
+            <h2 class="experience-group-title">{{ group.grouper }}</h2>
+            <div class="experience-grid">
+              {% for experience in group.list %}
+                <article class="experience-card">
+                  {% if experience.thumbnail %}
+                    <div class="experience-thumbnail-frame">
+                      <img
+                        class="experience-thumbnail"
+                        src="{{ experience.thumbnail }}"
+                        alt="Thumbnail {{ experience.title }}"
+                      >
+                    </div>
+                  {% endif %}
+                  <div class="experience-card-body">
+                    <h3>{{ experience.title }}</h3>
+                    <p class="experience-description">
+                      {{ experience.description }}
+                    </p>
 
-                {% if experience.is_ongoing %}
-                  <p class="experience-status experience-status-ongoing">
-                    Sedang berlangsung
-                  </p>
-                {% else %}
-                  <p class="experience-status">Selesai</p>
-                {% endif %}
-              </div>
-            </article>
-          {% empty %}
-            <p class="empty-state">
-              Belum ada pengalaman yang ditambahkan.
-            </p>
-          {% endfor %}
-        </div>
+                    {% if experience.is_ongoing %}
+                      <p class="experience-status experience-status-ongoing">
+                        Sedang berlangsung
+                      </p>
+                    {% else %}
+                      <p class="experience-status">Selesai</p>
+                    {% endif %}
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          </div>
+        {% empty %}
+          <p class="empty-state">
+            Belum ada pengalaman yang ditambahkan.
+          </p>
+        {% endfor %}
       </div>
     </section>
   </main>

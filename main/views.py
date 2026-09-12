@@ -21,7 +21,7 @@ def show_experience(request):
         'name': 'William Orlando',
         'npm': '2506657390',
         'study_program': 'S1 Sistem Informasi',
-        'experience_list': Experience.objects.all(),
+        'experience_list': Experience.objects.all().order_by('category', 'title'),
     }
     return render(request, 'experience.html', context)
 
