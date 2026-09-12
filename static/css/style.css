@@ -530,6 +530,19 @@ h1, h2, h3 {
   border-top: 1px solid var(--line);
 }
 
+.project-link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.project-link:hover {
+  text-decoration: underline;
+}
+
 .ds-practice {
   margin-top: 2.5rem;
   padding-top: 2.5rem;

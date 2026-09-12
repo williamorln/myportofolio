@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Experience - {{ name }}</title>
+  <title>Projects - {{ name }}</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,8 +19,8 @@
         <a href="{% url 'main:show_main' %}">Profile</a>
         <a href="{% url 'main:show_main' %}#about">About</a>
         <a href="{% url 'main:show_main' %}#skills">Skills</a>
-        <a href="{% url 'main:show_experience' %}" aria-current="page">Experience</a>
-        <a href="{% url 'main:show_projects' %}">Projects</a>
+        <a href="{% url 'main:show_experience' %}">Experience</a>
+        <a href="{% url 'main:show_projects' %}" aria-current="page">Projects</a>
         <a href="{% url 'main:show_main' %}#contact">Contact</a>
       </nav>
       <input type="checkbox" id="theme-toggle" class="theme-toggle-input">
@@ -31,44 +31,42 @@
   </header>
 
   <main>
-    <section class="experience-section" id="experience">
+    <section class="section" id="projects">
       <div class="container">
-        <p class="section-kicker">Perjalanan saya sejauh ini</p>
-        <h1>Experience</h1>
+        <p class="section-kicker">Hal-hal yang pernah saya bangun</p>
+        <h1>Projects</h1>
 
-        <div class="experience-grid">
-          {% for experience in experience_list %}
-            <article class="experience-card">
-              {% if experience.thumbnail %}
-                <img
-                  class="experience-thumbnail"
-                  src="{{ experience.thumbnail }}"
-                  alt="Thumbnail {{ experience.title }}"
-                >
-              {% endif %}
-              <div class="experience-card-body">
-                <span class="experience-category">
-                  {{ experience.get_category_display }}
-                </span>
-                <h2>{{ experience.title }}</h2>
-                <p class="experience-description">
-                  {{ experience.description }}
-                </p>
-
-                {% if experience.is_ongoing %}
-                  <p class="experience-status experience-status-ongoing">
-                    Sedang berlangsung
-                  </p>
-                {% else %}
-                  <p class="experience-status">Selesai</p>
-                {% endif %}
+        <div class="project-showcase">
+          {% for project in project_list %}
+            <article class="project-showcase-card">
+              <h3>{{ project.title }}</h3>
+              <div class="project-block">
+                <span class="project-label">Problem</span>
+                <p>{{ project.problem }}</p>
               </div>
+              <div class="project-block">
+                <span class="project-label">Solution</span>
+                <p>{{ project.solution }}</p>
+              </div>
+              <p class="project-tech">{{ project.tech_stack }}</p>
+              {% if project.project_url %}
+                <a href="{{ project.project_url }}" class="project-link" target="_blank" rel="noopener">View Project &rarr;</a>
+              {% endif %}
             </article>
           {% empty %}
-            <p class="empty-state">
-              Belum ada pengalaman yang ditambahkan.
-            </p>
+            <p class="empty-state">Belum ada project yang ditambahkan.</p>
           {% endfor %}
+        </div>
+
+        <div class="ds-practice">
+          <h3>Data Science Practice</h3>
+          <p class="ds-practice-intro">Foundational learning exercises supporting my interest in data science and AI:</p>
+          <div class="tag-list">
+            <span class="tag">Titanic Survival Prediction</span>
+            <span class="tag">House Pricing Prediction</span>
+            <span class="tag">Digit Recognizer</span>
+            <span class="tag">Customer Relevance Model</span>
+          </div>
         </div>
       </div>
     </section>
