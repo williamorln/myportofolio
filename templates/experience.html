@@ -46,7 +46,7 @@
                   {% if experience.thumbnail %}
                     <div class="experience-thumbnail-frame">
                       <img
-                        class="experience-thumbnail"
+                        class="experience-thumbnail{% if experience.title == 'Self-Started Floral Business' or experience.title == 'Academic & Teaching Staff – BETIS Fasilkom UI' %} experience-thumbnail--portrait{% endif %}"
                         src="{{ experience.thumbnail }}"
                         alt="Thumbnail {{ experience.title }}"
                       >

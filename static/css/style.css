@@ -693,6 +693,11 @@ h1, h2, h3 {
   transition: filter 0.3s ease, transform 0.3s ease;
 }
 
+/* Source photo is a portrait shot; a landscape crop loses too much of it. */
+.experience-thumbnail--portrait {
+  aspect-ratio: 3 / 4;
+}
+
 .experience-card:hover .experience-thumbnail {
   filter: grayscale(0%);
   transform: scale(1.04);
