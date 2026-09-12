@@ -20,7 +20,7 @@
         <a href="#about">About</a>
         <a href="#skills">Skills</a>
         <a href="{% url 'main:show_experience' %}">Experience</a>
-        <a href="#projects">Projects</a>
+        <a href="{% url 'main:show_projects' %}">Projects</a>
         <a href="#contact">Contact</a>
       </nav>
       <input type="checkbox" id="theme-toggle" class="theme-toggle-input">
@@ -106,115 +106,6 @@
               <span class="tag">Indonesian &mdash; Native</span>
               <span class="tag">English &mdash; Professional Working Proficiency</span>
             </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section section-alt" id="projects">
-      <div class="container">
-        <h2>Projects</h2>
-        <div class="project-showcase">
-          <article class="project-showcase-card">
-            <h3>SCELE Notifier</h3>
-            <div class="project-block">
-              <span class="project-label">Problem</span>
-              <p>SCELE, Fasilkom UI's course platform, doesn't proactively notify students about new assignments or forum activity &mdash; and its RSS feeds are disabled.</p>
-            </div>
-            <div class="project-block">
-              <span class="project-label">Solution</span>
-              <p>Built a Telegram bot that logs into SCELE via session scraping, monitors the Timeline and forum activity, and pushes real-time notifications &mdash; reverse-engineered SCELE's internal AJAX endpoint from scratch to make it work.</p>
-            </div>
-            <p class="project-tech">Python &middot; Telegram Bot API &middot; Web Scraping</p>
-          </article>
-
-          <article class="project-showcase-card">
-            <h3>Life OS</h3>
-            <div class="project-block">
-              <span class="project-label">Problem</span>
-              <p>Academic reminders alone don't cover the rest of daily planning &mdash; tasks, goals, and reminders end up scattered across different tools.</p>
-            </div>
-            <div class="project-block">
-              <span class="project-label">Solution</span>
-              <p>Expanded the SCELE Notifier into a broader personal assistant bot covering reminders, goal tracking, and daily planning as a lightweight, all-in-one productivity system.</p>
-            </div>
-            <p class="project-tech">Python &middot; Telegram Bot API</p>
-          </article>
-
-          <article class="project-showcase-card">
-            <h3>Omnichannel AI Chatbot</h3>
-            <div class="project-block">
-              <span class="project-label">Problem</span>
-              <p>Businesses need a chatbot that isn't locked into a single messaging platform.</p>
-            </div>
-            <div class="project-block">
-              <span class="project-label">Solution</span>
-              <p>Built a chatbot system with an extensive feature set designed to operate across multiple messaging channels, rather than being tied to one.</p>
-            </div>
-            <p class="project-tech">Python &middot; Chatbot / NLP Tooling</p>
-          </article>
-
-          <article class="project-showcase-card">
-            <h3>PO Workflow System &ndash; Prabu</h3>
-            <div class="project-block">
-              <span class="project-label">Problem</span>
-              <p>Prabu, a shoe brand, managed its purchase order process manually and in a fragmented way.</p>
-            </div>
-            <div class="project-block">
-              <span class="project-label">Solution</span>
-              <p>Designed and built a workflow system to manage the PO process end-to-end, turning it into a structured, repeatable system.</p>
-            </div>
-            <p class="project-tech">Workflow &amp; System Design</p>
-          </article>
-
-          <article class="project-showcase-card">
-            <h3>Clipping Automation</h3>
-            <div class="project-block">
-              <span class="project-label">Problem</span>
-              <p>A content clipping business needed to cut down on repetitive manual work in processing clipped content at scale.</p>
-            </div>
-            <div class="project-block">
-              <span class="project-label">Solution</span>
-              <p>Built automation tooling to streamline the repetitive parts of managing and processing clipped content.</p>
-            </div>
-            <p class="project-tech">Automation Scripting</p>
-          </article>
-
-          <article class="project-showcase-card">
-            <h3>QRMenuKu &ndash; Business Plan &amp; Product Development</h3>
-            <div class="project-block">
-              <span class="project-label">Problem</span>
-              <p>Traditional F&amp;B SME ordering processes are slow and inefficient.</p>
-            </div>
-            <div class="project-block">
-              <span class="project-label">Solution</span>
-              <p>Collaborated in a team to design a digital ordering system with an analytics dashboard and payment gateway integration, contributing to the business model and operational workflow design.</p>
-            </div>
-            <p class="project-tech">Product &amp; Business Design</p>
-          </article>
-
-          <article class="project-showcase-card">
-            <h3>Personal Portfolio Website</h3>
-            <div class="project-block">
-              <span class="project-label">Problem</span>
-              <p>Needed a live, continuously-updated portfolio to showcase skills and experience for academic and professional purposes.</p>
-            </div>
-            <div class="project-block">
-              <span class="project-label">Solution</span>
-              <p>Built and iterated on this site from scratch across weekly assignments for the Pemrograman Berbasis Platform course.</p>
-            </div>
-            <p class="project-tech">Django &middot; HTML5 &middot; CSS3</p>
-          </article>
-        </div>
-
-        <div class="ds-practice">
-          <h3>Data Science Practice</h3>
-          <p class="ds-practice-intro">Foundational learning exercises supporting my interest in data science and AI:</p>
-          <div class="tag-list">
-            <span class="tag">Titanic Survival Prediction</span>
-            <span class="tag">House Pricing Prediction</span>
-            <span class="tag">Digit Recognizer</span>
-            <span class="tag">Customer Relevance Model</span>
           </div>
         </div>
       </div>
