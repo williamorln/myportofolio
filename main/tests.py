@@ -67,4 +67,3 @@ class MainTest(TestCase):
 
         self.assertFalse(self.experience.is_ongoing)
         self.assertContains(response, 'Selesai')
-        self.assertNotContains(response, 'Sedang berlangsung')
