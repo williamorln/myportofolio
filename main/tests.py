@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from main.models import Experience
+from main.models import Experience, Project
 
 
 class MainTest(TestCase):
@@ -68,3 +68,49 @@ class MainTest(TestCase):
         self.assertFalse(self.experience.is_ongoing)
         self.assertContains(response, 'Selesai')
         self.assertNotContains(response, 'Sedang berlangsung')
+
+
+class ProjectTest(TestCase):
+    def setUp(self):
+        self.project = Project.objects.create(
+            title='SCELE Notifier',
+            problem='SCELE does not send notifications automatically.',
+            solution='Built a Telegram bot that scrapes SCELE and sends alerts.',
+            tech_stack='Python · Telegram Bot API',
+        )
+
+    def test_projects_url_is_accessible(self):
+        response = self.client.get(reverse('main:show_projects'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'projects.html')
+        self.assertContains(
+            response,
+            f'href="{reverse("main:show_main")}"',
+        )
+
+    def test_project_model(self):
+        self.assertEqual(str(self.project), 'SCELE Notifier')
+        self.assertFalse(self.project.project_url)
+
+    def test_projects_page_shows_data(self):
+        response = self.client.get(reverse('main:show_projects'))
+
+        self.assertContains(response, self.project.title)
+        self.assertContains(response, self.project.problem)
+        self.assertContains(response, self.project.solution)
+        self.assertContains(response, self.project.tech_stack)
+        self.assertNotContains(response, 'View Project')
+
+    def test_empty_projects_page(self):
+        Project.objects.all().delete()
+        response = self.client.get(reverse('main:show_projects'))
+
+        self.assertContains(response, 'Belum ada project yang ditambahkan.')
+
+    def test_project_with_url_shows_link(self):
+        self.project.project_url = 'https://github.com/williamorln/scele-notifier'
+        self.project.save()
+        response = self.client.get(reverse('main:show_projects'))
+
+        self.assertContains(response, 'href="https://github.com/williamorln/scele-notifier"')
