@@ -101,10 +101,10 @@ git push pws master
 
 ## AI Disclosure
 
-Konten yang ditampilkan di halaman ini (deskripsi project, pengalaman organisasi, skill, dan bio) aku tulis sendiri dari draft yang udah aku siapin duluan, bukan hasil karangan AI. Struktur dasar halaman dari Tutorial 1 aku kerjain sendiri, dan **Tutorial 2 (model, view, template, migrasi, serta unit test pertama untuk Experience) aku kerjain 100% sendiri tanpa bantuan AI sama sekali**. Untuk pengembangan lanjutan, aku tetap yang memimpin arah desain, konten, dan keputusan coding. Peran Claude (Claude Code) di sini terbatas cuma sebagai **pemberi saran** (tempat diskusi pendekatan) dan **bantu debugging** kalau ada error/bug teknis, beberapa contohnya:
+Konten yang ditampilkan di halaman ini (deskripsi project, pengalaman organisasi, skill, dan bio) aku tulis sendiri dari draft yang udah aku siapin duluan, bukan hasil karangan AI. Struktur dasar halaman dari Tutorial 1 aku kerjain sendiri, dan **Tutorial 2 (model, view, template, migrasi, serta unit test pertama untuk Experience) aku kerjain 100% sendiri tanpa bantuan AI sama sekali**. Untuk pengembangan lanjutan, aku tetap yang memimpin arah desain, konten, dan keputusan coding, dan aku pakai Claude (Claude Code) terutama buat **ngasih saran pendekatan** dan **bantu debugging** pas nemu error/bug teknis, beberapa contohnya:
 
 - Debug bug CSS Grid di hero section yang bikin halaman overflow ke samping saat dibuka di layar sempit/mobile.
 - Ngasih saran soal desain field model `Project` biar sesuai kebutuhan, dan bantu debug error di unit test yang disebabkan HTML auto-escaping pada tanda petik.
 - Bantu debug tipe field `thumbnail` yang ternyata bermasalah dipakai buat path foto lokal lewat Django admin.
 
-Semua kode dan konten tetap aku review, sesuaikan, dan pahami sebelum di-commit — posisi AI di sini sebatas penasihat teknis dan alat bantu debug, bukan gantiin keputusan desain, isi konten, maupun kontribusi coding yang tetap aku pegang.
+Semua kode dan konten tetap aku review, sesuaikan, dan pahami sebelum di-commit — keputusan desain, isi konten, dan arah coding tetap aku yang pegang.
