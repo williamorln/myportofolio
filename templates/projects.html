@@ -1,40 +1,31 @@
-{% load static %}
-<!doctype html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends "base.html" %}
+{% block meta %}
   <title>Projects - {{ name }}</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-<body>
-  <header class="site-header">
-    <div class="container">
-      <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
-      <nav>
-        <a href="{% url 'main:show_main' %}">Profile</a>
-        <a href="{% url 'main:show_main' %}#about">About</a>
-        <a href="{% url 'main:show_main' %}#skills">Skills</a>
-        <a href="{% url 'main:show_experience' %}">Experience</a>
-        <a href="{% url 'main:show_projects' %}" aria-current="page">Projects</a>
-        <a href="{% url 'main:show_main' %}#contact">Contact</a>
-      </nav>
-      <input type="checkbox" id="theme-toggle" class="theme-toggle-input">
-      <label for="theme-toggle" class="theme-toggle-label" aria-label="Toggle dark mode">
-        <span class="toggle-track"><span class="toggle-thumb"></span></span>
-      </label>
-    </div>
-  </header>
-
+{% endblock meta %}
+{% block content %}
   <main>
     <section class="section" id="projects">
       <div class="container">
         <p class="section-kicker">Hal-hal yang pernah saya bangun</p>
-        <h1>Projects</h1>
+        <div class="project-header">
+          <h1>Projects</h1>
+          <a href="{% url 'main:create_project' %}" class="button project-add-button">
+            <span aria-hidden="true">+</span>
+            Tambah Proyek
+          </a>
+        </div>
+
+        <form method="get" action="{% url 'main:show_projects' %}" class="project-search">
+          <input
+            type="search"
+            name="title"
+            value="{{ title_query }}"
+            placeholder="Cari berdasarkan nama proyek"
+            class="project-search__input"
+            aria-label="Cari berdasarkan nama proyek"
+          >
+          <button type="submit" class="button">Cari</button>
+        </form>
 
         <div class="project-showcase">
           {% for project in project_list %}
@@ -49,12 +40,21 @@
                 <p>{{ project.solution }}</p>
               </div>
               <p class="project-tech">{{ project.tech_stack }}</p>
-              {% if project.project_url %}
-                <a href="{{ project.project_url }}" class="project-link" target="_blank" rel="noopener">View Project &rarr;</a>
-              {% endif %}
+              <div class="project-card-actions">
+                <div class="project-actions">
+                  {% if project.project_url %}
+                    <a href="{{ project.project_url }}" class="project-link" target="_blank" rel="noopener">View Project &rarr;</a>
+                  {% endif %}
+                  {% include "components/project_delete_modal.html" with project=project %}
+                </div>
+              </div>
             </article>
           {% empty %}
-            <p class="empty-state">Belum ada project yang ditambahkan.</p>
+            {% if title_query %}
+              <p class="empty-state">Tidak ada project dengan nama tersebut.</p>
+            {% else %}
+              <p class="empty-state">Belum ada project yang ditambahkan.</p>
+            {% endif %}
           {% endfor %}
         </div>
 
@@ -71,19 +71,4 @@
       </div>
     </section>
   </main>
-
-  <footer class="site-footer">
-    <div class="container footer-grid">
-      <div>
-        <p class="footer-name">{{ name }}</p>
-        <p class="footer-meta">{{ study_program }} &middot; Universitas Indonesia &middot; NPM {{ npm }}</p>
-      </div>
-      <div class="footer-links">
-        <a href="https://github.com/williamorln" target="_blank" rel="noopener">GitHub</a>
-        <a href="mailto:adakanduo4@gmail.com">Email</a>
-      </div>
-    </div>
-    <p class="footer-copyright">&copy; 2026 {{ name }}</p>
-  </footer>
-</body>
-</html>
+{% endblock content %}

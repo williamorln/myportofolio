@@ -1,0 +1,57 @@
+{% load static %}
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  {% block meta %}{% endblock meta %}
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
+      <nav>
+        <a href="{% url 'main:show_main' %}"{% if active_page == 'main' %} aria-current="page"{% endif %}>Profile</a>
+        <a href="{% url 'main:show_main' %}#about">About</a>
+        <a href="{% url 'main:show_main' %}#skills">Skills</a>
+        <a href="{% url 'main:show_experience' %}"{% if active_page == 'experience' %} aria-current="page"{% endif %}>Experience</a>
+        <a href="{% url 'main:show_projects' %}"{% if active_page == 'projects' %} aria-current="page"{% endif %}>Projects</a>
+        <a href="{% url 'main:show_main' %}#contact">Contact</a>
+      </nav>
+      <input type="checkbox" id="theme-toggle" class="theme-toggle-input">
+      <label for="theme-toggle" class="theme-toggle-label" aria-label="Toggle dark mode">
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      </label>
+    </div>
+  </header>
+
+  {% if messages %}
+    <div class="container">
+      {% for message in messages %}
+        <p class="site-message{% if message.tags %} site-message--{{ message.tags }}{% endif %}">{{ message }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% block content %}{% endblock content %}
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <p class="footer-name">{{ name }}</p>
+        <p class="footer-meta">{{ study_program }} &middot; Universitas Indonesia &middot; NPM {{ npm }}</p>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/williamorln" target="_blank" rel="noopener">GitHub</a>
+        <a href="mailto:adakanduo4@gmail.com">Email</a>
+      </div>
+    </div>
+    <p class="footer-copyright">&copy; 2026 {{ name }}</p>
+  </footer>
+</body>
+</html>
