@@ -1,35 +1,8 @@
-{% load static %}
-<!doctype html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends "base.html" %}
+{% block meta %}
   <title>Experience - {{ name }}</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-<body>
-  <header class="site-header">
-    <div class="container">
-      <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
-      <nav>
-        <a href="{% url 'main:show_main' %}">Profile</a>
-        <a href="{% url 'main:show_main' %}#about">About</a>
-        <a href="{% url 'main:show_main' %}#skills">Skills</a>
-        <a href="{% url 'main:show_experience' %}" aria-current="page">Experience</a>
-        <a href="{% url 'main:show_projects' %}">Projects</a>
-        <a href="{% url 'main:show_main' %}#contact">Contact</a>
-      </nav>
-      <input type="checkbox" id="theme-toggle" class="theme-toggle-input">
-      <label for="theme-toggle" class="theme-toggle-label" aria-label="Toggle dark mode">
-        <span class="toggle-track"><span class="toggle-thumb"></span></span>
-      </label>
-    </div>
-  </header>
-
+{% endblock meta %}
+{% block content %}
   <main>
     <section class="experience-section" id="experience">
       <div class="container">
@@ -78,19 +51,4 @@
       </div>
     </section>
   </main>
-
-  <footer class="site-footer">
-    <div class="container footer-grid">
-      <div>
-        <p class="footer-name">{{ name }}</p>
-        <p class="footer-meta">{{ study_program }} &middot; Universitas Indonesia &middot; NPM {{ npm }}</p>
-      </div>
-      <div class="footer-links">
-        <a href="https://github.com/williamorln" target="_blank" rel="noopener">GitHub</a>
-        <a href="mailto:adakanduo4@gmail.com">Email</a>
-      </div>
-    </div>
-    <p class="footer-copyright">&copy; 2026 {{ name }}</p>
-  </footer>
-</body>
-</html>
+{% endblock content %}
