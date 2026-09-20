@@ -19,6 +19,7 @@ myportofolio/
 ├── env/                  # virtual environment (tidak di-commit)
 ├── main/                 # app profil, experience, dan projects
 │   ├── migrations/
+│   ├── forms.py           # ModelForm untuk Project dan Experience
 │   ├── models.py
 │   ├── tests.py
 │   ├── urls.py
@@ -28,6 +29,9 @@ myportofolio/
 │   ├── urls.py
 │   └── views.py
 ├── templates/
+│   ├── base.html          # skeleton bersama: head, navigasi, pesan, footer
+│   ├── experience_form.html
+│   ├── experience_confirm_delete.html
 │   ├── experience.html    # daftar experience dari database
 │   ├── projects.html      # daftar project dari database
 │   └── index.html         # halaman utama portofolio
@@ -81,18 +85,40 @@ Proyek ini di-deploy ke PWS Fasilkom UI. Untuk deploy ulang setelah ada perubaha
 git push pws master
 ```
 
+## Form dan Data Delivery — Minggu 3
+
+Tutorial 03 menyediakan skeleton `base.html`, form tambah project, penghapusan project, pencarian, dan JSON project. Tugas 3 melanjutkannya pada bagian **Experience**. Semua template halaman mewarisi `base.html`; template di `components/` merupakan fragmen yang disertakan melalui `include`.
+
+`ExperienceForm` menyediakan seluruh field yang dapat diedit: `title` (CharField), `description` (TextField), `category` (CharField dengan pilihan), `thumbnail` (CharField opsional), dan `ended_at` (DateTimeField opsional). `id` dan timestamp otomatis `started_at` tidak dimasukkan ke form. `ended_at` adalah data waktu selesai yang diisi pengguna, bukan timestamp pencatatan otomatis; kosong berarti masih berlangsung. Waktu pada form menggunakan UTC, sesuai konfigurasi proyek.
+
+| URL | Fungsi |
+| --- | --- |
+| `/experience/` | Daftar experience setelah JSON dideserialisasi, pencarian judul, dan filter status |
+| `/experience/add/` | Form tambah experience |
+| `/experience/<uuid>/edit/` | Form edit dengan data awal dari objek yang dipilih |
+| `/experience/<uuid>/delete/` | GET untuk konfirmasi, POST untuk menghapus |
+| `/api/experience/` | Data experience dalam JSON |
+| `/api/projects/` | Data project dalam JSON dari Tutorial 03 |
+
+Filter experience berlaku pada halaman dan API, misalnya `/api/experience/?title=staff&status=ongoing`. Pilihan status adalah `ongoing` atau `completed`; tanpa filter menampilkan semua data. Tombol **Lihat JSON** mempertahankan filter yang sedang dipakai. Fitur tambahan meliputi jumlah hasil, pesan sukses, keadaan hasil kosong, dan konfirmasi hapus yang tetap bekerja tanpa JavaScript.
+
+Setup minggu ini menggunakan langkah instalasi lokal di atas; tidak ada dependensi atau perubahan skema baru. Verifikasi:
+
+```sh
+python manage.py migrate
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test
+python manage.py runserver
+```
+
+Uji alur lewat `/experience/`: tambah pengalaman, edit deskripsi/status selesai, cari judulnya, buka JSON, kemudian hapus melalui konfirmasi. Tes otomatis memakai database sementara dan mencakup form invalid, edit tanpa membuat baris baru, CSRF, UUID tidak ditemukan, filter, deserialisasi, dan escaping HTML. Data portofolio lokal tidak dihapus oleh tes.
+
+Alur CRUD mengikuti tutorial dan belum memiliki pembatasan akun pemilik; pengunjung yang dapat mengakses form juga dapat mengubah data. CSRF melindungi permintaan lintas situs, bukan menggantikan otorisasi pengguna.
+
+Pengumpulan Tugas 3 menggunakan **tautan commit GitHub yang telah di-push**, pada repositori publik, paling lambat **21 September 2026 pukul 23.59 WIB**. Tutorial 03 harus sudah selesai paling lambat 16 September 2026. Push atau pengumpulan tidak dilakukan oleh perintah pengujian di atas.
+
 ## Pertanyaan Reflektif
-
-### Progress Tugas 3 — 50%
-
-Checkpoint pertama mencakup `ExperienceForm`, tambah/edit pengalaman, konfirmasi hapus melalui POST dengan CSRF, dan template yang mewarisi `base.html`. Field form meliputi judul, deskripsi, kategori, gambar opsional, dan waktu selesai opsional (UTC). Data daftar Experience pada tahap ini masih diambil langsung dari model.
-
-Rencana checkpoint berikutnya:
-
-- **75%:** JSON Experience, deserialisasi untuk tampilan, pencarian, dan filter status.
-- **100%:** pengujian alur lengkap, dokumentasi akhir, dan jawaban reflektif Tugas 3.
-
-Angka persentase merupakan pembagian tahap pengerjaan, bukan estimasi nilai rubrik. Langkah setup tetap mengikuti panduan lokal di atas; tahap ini tidak menambah dependensi atau migrasi. Buka `/experience/` untuk mencoba tambah, edit, dan hapus. Checkpoint ini belum merupakan pengumpulan final Tugas 3.
 
 ### Tugas 1
 
@@ -110,11 +136,19 @@ Angka persentase merupakan pembagian tahap pengerjaan, bukan estimasi nilai rubr
 
 3. `makemigrations` hanya membuat **rencana perubahan** &mdash; Django membandingkan `models.py` saat ini dengan migration terakhir, lalu menulis file migration baru berisi instruksi perubahan (belum diterapkan ke database). `migrate` adalah yang benar-benar **menerapkan** instruksi itu ke database &mdash; membuat, mengubah, atau menghapus tabel dan kolom sesuai file migration yang ada. Contoh konkret dari tugas ini: begitu aku menambahkan model `Project` baru di `models.py`, aku menjalankan `makemigrations` dan Django membuat file `0002_project.py`, tapi database itu sendiri belum berubah sama sekali di titik ini. Baru setelah aku menjalankan `migrate`, tabel `main_project` benar-benar terbentuk di `db.sqlite3`. Kalau cuma menjalankan `makemigrations` tanpa `migrate`, aku hanya akan punya "rencana" di atas kertas, sementara kondisi database masih yang lama.
 
+### Tugas 3
+
+1. `ModelForm` menghubungkan form dengan model, sehingga tipe input, batas panjang, pilihan kategori, dan aturan wajib isi mengikuti definisi model. Ini mengurangi duplikasi dibanding menulis input HTML, validasi, dan penyimpanan secara manual. Pada proyek ini, `ExperienceForm` memakai `is_valid()` sebelum `save()`. Saat edit, `instance=experience` memastikan yang diperbarui adalah baris yang dipilih, bukan membuat baris baru. Form HTML manual tetap dapat digunakan, tetapi validasi server harus ditulis dengan benar. `{% csrf_token %}` menghasilkan input token yang diperiksa middleware Django untuk permintaan POST. Tujuannya mencegah situs lain mengirim tindakan perubahan data dengan memanfaatkan sesi pengguna tanpa persetujuannya. Token bukan pengganti autentikasi atau otorisasi.
+
+2. JSON umumnya lebih ringkas karena tidak memerlukan pasangan tag pembuka dan penutup seperti XML. Struktur objek, array, string, angka, boolean, dan null juga sesuai dengan data yang biasa dipakai aplikasi web. JavaScript dapat membaca JSON langsung dengan `JSON.parse()` atau `response.json()`, sehingga pertukaran data antara backend dan frontend sederhana. XML tetap berguna ketika memerlukan namespace, atribut, atau struktur dokumen yang kompleks; JSON lebih sesuai untuk kebutuhan daftar experience dalam proyek ini, bukan selalu lebih baik untuk semua kasus.
+
+3. Request `/api/experience/` dicocokkan oleh URL router ke `get_experience_json`. View mengambil QuerySet `Experience`, menerapkan pencarian/filter, lalu memanggil `serializers.serialize('json', experiences)`. Hasil berupa teks JSON dikembalikan sebagai `HttpResponse` dengan `Content-Type: application/json`. Objek model dan QuerySet tidak dapat dikirim langsung sebagai JSON karena merupakan objek Python dengan tipe seperti UUID dan datetime; serialization mengubahnya menjadi representasi yang dapat dipertukarkan, termasuk `model`, `pk`, dan `fields`. Untuk halaman `/experience/`, `show_experience` mengambil respons JSON dari fungsi tersebut, memanggil `serializers.deserialize`, mengambil `.object` setiap hasil, dan mengirim daftar objek ke template. Pemanggilan ini berlangsung di server tanpa HTTP tambahan. Deserialisasi tidak menyimpan ulang objek ke database; tujuannya memulihkan struktur data agar field dan properti seperti `is_ongoing` bisa dipakai saat rendering.
+
 ## AI Disclosure
 
-Untuk checkpoint Tugas 3 ini, saya menggunakan **ChatGPT (Codex)** untuk ide pendekatan, referensi kode, bantuan implementasi form/view/template CRUD Experience, serta pemeriksaan error. Bagian JSON dan dokumentasi akhir dilanjutkan pada checkpoint berikutnya.
+Untuk Tugas 3, saya menggunakan **ChatGPT (Codex)** untuk ide pengembangan fitur, referensi pendekatan kode, bantuan implementasi form/view/template Experience, debugging, penyusunan tes otomatis, dan draf dokumentasi. Bantuan berfokus pada CRUD Experience, alur JSON/deserialisasi, serta pemeriksaan kesesuaian dengan checklist tugas.
 
-Catatan tahap sebelumnya:
+Catatan penggunaan AI pada tahap sebelumnya:
 
 Konten yang ditampilkan di halaman ini (deskripsi project, pengalaman organisasi, skill, dan bio) aku tulis sendiri dari draft yang udah aku siapin duluan, bukan hasil karangan AI. Struktur dasar halaman dari Tutorial 1 aku kerjain sendiri, dan **Tutorial 2 (model, view, template, migrasi, serta unit test pertama untuk Experience) aku kerjain 100% sendiri tanpa bantuan AI sama sekali**. Untuk pengembangan lanjutan, aku tetap yang memimpin arah desain, konten, dan keputusan coding, dan aku pakai Claude (Claude Code) terutama buat **ngasih saran pendekatan** dan **bantu debugging** pas nemu error/bug teknis, beberapa contohnya:
 

@@ -1,8 +1,122 @@
-from django.test import TestCase
+import uuid
+from unittest.mock import patch
+
+from django.core import serializers
+from django.http import HttpResponse
+from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from main.models import Experience, Project
+from main.forms import ExperienceForm
+
+
+class ExperienceFlowTest(TestCase):
+    def setUp(self):
+        self.payload = {
+            'title': 'Research Assistant', 'description': 'Analisis data penelitian.',
+            'category': 'research', 'thumbnail': '/static/img/research.jpg',
+            'ended_at': '',
+        }
+        self.experience = Experience.objects.create(
+            title='Unique Volunteer', description='Kegiatan sosial.', category='volunteer',
+        )
+
+    def url(self, action):
+        return reverse(f'main:{action}_experience', args=[self.experience.pk])
+
+    def test_form_includes_all_editable_fields(self):
+        self.assertEqual(set(ExperienceForm().fields), {
+            'title', 'description', 'category', 'thumbnail', 'ended_at',
+        })
+
+    def test_create_then_update_preserves_identity_and_count(self):
+        before = Experience.objects.count()
+        response = self.client.post(reverse('main:create_experience'), self.payload)
+        self.assertRedirects(response, reverse('main:show_experience'))
+        self.experience = Experience.objects.get(title=self.payload['title'])
+        started_at = self.experience.started_at
+        response = self.client.get(self.url('update'))
+        self.assertContains(response, self.payload['title'])
+        self.assertTemplateUsed(response, 'base.html')
+        payload = {**self.payload, 'title': 'Updated Research', 'ended_at': '2026-09-20T12:30'}
+        self.assertRedirects(self.client.post(self.url('update'), payload), reverse('main:show_experience'))
+        self.experience.refresh_from_db()
+        self.assertEqual(self.experience.title, payload['title'])
+        self.assertEqual(self.experience.started_at, started_at)
+        self.assertFalse(self.experience.is_ongoing)
+        self.assertEqual(Experience.objects.count(), before + 1)
+        response = self.client.get(self.url('update'))
+        self.assertContains(response, '2026-09-20T12:30')
+        self.client.post(self.url('update'), self.payload)
+        self.experience.refresh_from_db()
+        self.assertTrue(self.experience.is_ongoing)
+
+    def test_invalid_forms_do_not_write_and_preserve_input(self):
+        before = Experience.objects.count()
+        for invalid in ({'title': ''}, {'category': 'unknown'}, {'ended_at': 'not a date'}):
+            with self.subTest(invalid=invalid):
+                response = self.client.post(reverse('main:create_experience'), {**self.payload, **invalid})
+                self.assertEqual(response.status_code, 200)
+                self.assertTrue(response.context['form'].errors)
+                self.assertContains(response, self.payload['description'])
+        response = self.client.post(self.url('update'), {**self.payload, 'title': ''})
+        self.assertTrue(response.context['form'].errors)
+        self.experience.refresh_from_db()
+        self.assertEqual(self.experience.title, 'Unique Volunteer')
+        self.assertEqual(Experience.objects.count(), before)
+
+    def test_delete_confirmation_and_post(self):
+        self.assertContains(self.client.get(self.url('delete')), self.experience.title)
+        self.assertTrue(Experience.objects.filter(pk=self.experience.pk).exists())
+        self.assertRedirects(self.client.post(self.url('delete')), reverse('main:show_experience'))
+        self.assertFalse(Experience.objects.filter(pk=self.experience.pk).exists())
+
+    def test_mutations_require_csrf(self):
+        client = Client(enforce_csrf_checks=True)
+        for url in (reverse('main:create_experience'), self.url('update'), self.url('delete')):
+            self.assertEqual(client.post(url, self.payload).status_code, 403)
+        response = client.get(reverse('main:create_experience'))
+        token = response.cookies['csrftoken'].value
+        response = client.post(reverse('main:create_experience'), {**self.payload, 'csrfmiddlewaretoken': token})
+        self.assertEqual(response.status_code, 302)
+
+    def test_unknown_ids_and_unsupported_methods(self):
+        for action in ('update', 'delete'):
+            url = reverse(f'main:{action}_experience', args=[uuid.uuid4()])
+            self.assertEqual(self.client.get(url).status_code, 404)
+            self.assertEqual(self.client.post(url, self.payload).status_code, 404)
+        self.assertEqual(self.client.put(self.url('update')).status_code, 405)
+        self.assertEqual(self.client.delete(self.url('delete')).status_code, 405)
+
+    def test_json_filters_and_round_trip(self):
+        response = self.client.get(reverse('main:get_experience_json'), {'title': ' unique ', 'status': 'ongoing'})
+        self.assertEqual(response['Content-Type'], 'application/json')
+        self.assertEqual(len(response.json()), 1)
+        restored = list(serializers.deserialize('json', response.content))[0].object
+        self.assertEqual(restored.pk, self.experience.pk)
+        self.assertEqual(restored.description, self.experience.description)
+        self.assertTrue(restored.is_ongoing)
+        self.assertEqual(self.client.get(reverse('main:get_experience_json'), {
+            'title': 'Unique', 'status': 'completed',
+        }).json(), [])
+        self.experience.ended_at = timezone.now()
+        self.experience.save()
+        response = self.client.get(reverse('main:show_experience'), {'title': 'Unique', 'status': 'completed'})
+        self.assertContains(response, '1 pengalaman ditampilkan.')
+        self.assertContains(response, 'Selesai')
+        response = self.client.get(reverse('main:show_experience'), {'title': 'not-a-match'})
+        self.assertContains(response, 'Tidak ada pengalaman yang cocok.')
+
+    def test_page_uses_deserialized_json_and_escapes_content(self):
+        self.experience.title = '<script>alert(1)</script>'
+        response = HttpResponse(serializers.serialize('json', [self.experience]), content_type='application/json')
+        with patch('main.views.get_experience_json', return_value=response) as endpoint:
+            page = self.client.get(reverse('main:show_experience'))
+        endpoint.assert_called_once()
+        self.assertEqual(page.context['experience_list'][0].title, self.experience.title)
+        self.assertContains(page, '&lt;script&gt;alert(1)&lt;/script&gt;')
+        self.assertNotContains(page, self.experience.title)
 
 
 class MainTest(TestCase):
