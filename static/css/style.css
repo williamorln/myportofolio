@@ -916,6 +916,20 @@ body:has(#theme-toggle:checked) .experience-status-ongoing {
   margin-top: 0.35rem;
 }
 
+.experience-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.experience-filters .form-group {
+  flex: 1 1 220px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
 .button {
   display: inline-block;
   height: fit-content;

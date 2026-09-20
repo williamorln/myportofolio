@@ -23,14 +23,34 @@ def show_main(request):
 
 
 def show_experience(request):
+    # Use the same filtered JSON delivery as the public API, then restore objects
+    # so template properties (including is_ongoing) remain available.
+    json_response = get_experience_json(request)
+    experiences = [item.object for item in serializers.deserialize(
+        'json', json_response.content.decode('utf-8'),
+    )]
     context = {
         'name': 'William Orlando',
         'npm': '2506657390',
         'study_program': 'S1 Sistem Informasi',
-        'experience_list': Experience.objects.all().order_by('category', 'title'),
+        'experience_list': experiences,
+        'title_query': request.GET.get('title', '').strip(),
+        'status_query': request.GET.get('status', ''),
         'active_page': 'experience',
     }
     return render(request, 'experience.html', context)
+
+
+def get_experience_json(request):
+    """Deliver a consistently ordered, optionally filtered experience collection."""
+    experiences = Experience.objects.all().order_by('category', 'title', 'pk')
+    title = request.GET.get('title', '').strip()
+    status = request.GET.get('status', '')
+    if title:
+        experiences = experiences.filter(title__icontains=title)
+    if status in ('ongoing', 'completed'):
+        experiences = experiences.filter(ended_at__isnull=(status == 'ongoing'))
+    return HttpResponse(serializers.serialize('json', experiences), content_type='application/json')
 
 
 def _experience_context(**extra):

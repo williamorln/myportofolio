@@ -11,7 +11,25 @@
 
         <div class="project-actions">
           <a class="button" href="{% url 'main:create_experience' %}">Tambah pengalaman</a>
+          <a href="{% url 'main:get_experience_json' %}?{{ request.GET.urlencode }}">Lihat JSON</a>
         </div>
+        <form method="get" class="experience-filters">
+          <div class="form-group">
+            <label for="experience-title">Cari pengalaman</label>
+            <input id="experience-title" type="search" name="title" value="{{ title_query }}" placeholder="Nama pengalaman">
+          </div>
+          <div class="form-group">
+            <label for="experience-status">Status</label>
+            <select id="experience-status" name="status">
+              <option value="">Semua status</option>
+              <option value="ongoing"{% if status_query == 'ongoing' %} selected{% endif %}>Sedang berlangsung</option>
+              <option value="completed"{% if status_query == 'completed' %} selected{% endif %}>Selesai</option>
+            </select>
+          </div>
+          <button class="button" type="submit">Terapkan</button>
+          <a href="{% url 'main:show_experience' %}">Reset</a>
+        </form>
+        <p>{{ experience_list|length }} pengalaman ditampilkan.</p>
 
         {% regroup experience_list by get_category_display as experience_groups %}
         {% for group in experience_groups %}
@@ -53,7 +71,7 @@
           </div>
         {% empty %}
           <p class="empty-state">
-            Belum ada pengalaman yang ditambahkan.
+            {% if title_query or status_query %}Tidak ada pengalaman yang cocok. Coba ubah filter atau tekan Reset.{% else %}Belum ada pengalaman yang ditambahkan.{% endif %}
           </p>
         {% endfor %}
       </div>
