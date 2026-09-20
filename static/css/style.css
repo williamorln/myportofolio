@@ -889,6 +889,7 @@ body:has(#theme-toggle:checked) .experience-status-ongoing {
 }
 
 .form-group input,
+.form-group select,
 .form-group textarea {
   width: 100%;
   box-sizing: border-box;
@@ -902,12 +903,14 @@ body:has(#theme-toggle:checked) .experience-status-ongoing {
 }
 
 .form-group input:focus,
+.form-group select:focus,
 .form-group textarea:focus {
   outline: 2px solid var(--accent);
   border-color: var(--accent);
 }
 
-.form-error {
+.form-error,
+.errorlist {
   color: #b42318;
   font-size: 0.85rem;
   margin-top: 0.35rem;

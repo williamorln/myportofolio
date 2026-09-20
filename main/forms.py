@@ -1,6 +1,31 @@
-from django.forms import ModelForm, TextInput, Textarea, URLInput
+from django.forms import DateTimeInput, ModelForm, TextInput, Textarea, URLInput
 
-from main.models import Project
+from main.models import Experience, Project
+
+
+class ExperienceForm(ModelForm):
+    class Meta:
+        model = Experience
+        # started_at is an automatic creation timestamp; ended_at is user data.
+        fields = ['title', 'description', 'category', 'thumbnail', 'ended_at']
+        labels = {
+            'title': 'Nama pengalaman',
+            'description': 'Deskripsi',
+            'category': 'Kategori',
+            'thumbnail': 'Alamat gambar',
+            'ended_at': 'Waktu selesai (UTC)',
+        }
+        help_texts = {
+            'thumbnail': 'Opsional. Gunakan URL HTTPS atau path /static/ untuk gambar lokal.',
+            'ended_at': 'Kosongkan jika masih berlangsung. Waktu menggunakan UTC.',
+        }
+        widgets = {
+            'description': Textarea(attrs={'rows': 5}),
+            'thumbnail': TextInput(attrs={'placeholder': '/static/img/foto.jpg'}),
+            'ended_at': DateTimeInput(
+                format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'},
+            ),
+        }
 
 
 class ProjectForm(ModelForm):

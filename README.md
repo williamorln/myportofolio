@@ -83,6 +83,17 @@ git push pws master
 
 ## Pertanyaan Reflektif
 
+### Progress Tugas 3 — 50%
+
+Checkpoint pertama mencakup `ExperienceForm`, tambah/edit pengalaman, konfirmasi hapus melalui POST dengan CSRF, dan template yang mewarisi `base.html`. Field form meliputi judul, deskripsi, kategori, gambar opsional, dan waktu selesai opsional (UTC). Data daftar Experience pada tahap ini masih diambil langsung dari model.
+
+Rencana checkpoint berikutnya:
+
+- **75%:** JSON Experience, deserialisasi untuk tampilan, pencarian, dan filter status.
+- **100%:** pengujian alur lengkap, dokumentasi akhir, dan jawaban reflektif Tugas 3.
+
+Angka persentase merupakan pembagian tahap pengerjaan, bukan estimasi nilai rubrik. Langkah setup tetap mengikuti panduan lokal di atas; tahap ini tidak menambah dependensi atau migrasi. Buka `/experience/` untuk mencoba tambah, edit, dan hapus. Checkpoint ini belum merupakan pengumpulan final Tugas 3.
+
 ### Tugas 1
 
 1. Iya, hampir semua bagian halaman ini pakai elemen semantik HTML5: `<header>` + `<nav>` untuk navigasi situs, `<main>` sebagai pembungkus konten utama, dan satu `<section>` per bagian (Hero, About, Skills, Experience, Projects, Contact) supaya strukturnya jelas kalau dibaca ulang tanpa perlu lihat CSS-nya dulu. Di Projects, tiap project aku bungkus pakai `<article>` karena masing-masing memang berdiri sendiri dan bisa dipahami lepas dari konteks section-nya. Yang paling menarik justru terjadi di Experience: awalnya aku pakai `<details>`/`<summary>` biar collapsible, tapi pas redesign minggu ini aku ganti jadi `<ol>` (ordered list) buat timeline-nya — karena riwayat pengalaman itu memang punya urutan kronologis, jadi `<ol>` lebih jujur secara semantik dibanding `<ul>` atau tumpukan `<div>` biasa, meskipun secara visual dia dirender sebagai garis timeline vertikal, bukan daftar bernomor. `<footer>` juga aku pakai khusus buat info kontak dan NPM, biar jelas terpisah dari konten utama.
@@ -100,6 +111,10 @@ git push pws master
 3. `makemigrations` hanya membuat **rencana perubahan** &mdash; Django membandingkan `models.py` saat ini dengan migration terakhir, lalu menulis file migration baru berisi instruksi perubahan (belum diterapkan ke database). `migrate` adalah yang benar-benar **menerapkan** instruksi itu ke database &mdash; membuat, mengubah, atau menghapus tabel dan kolom sesuai file migration yang ada. Contoh konkret dari tugas ini: begitu aku menambahkan model `Project` baru di `models.py`, aku menjalankan `makemigrations` dan Django membuat file `0002_project.py`, tapi database itu sendiri belum berubah sama sekali di titik ini. Baru setelah aku menjalankan `migrate`, tabel `main_project` benar-benar terbentuk di `db.sqlite3`. Kalau cuma menjalankan `makemigrations` tanpa `migrate`, aku hanya akan punya "rencana" di atas kertas, sementara kondisi database masih yang lama.
 
 ## AI Disclosure
+
+Untuk checkpoint Tugas 3 ini, saya menggunakan **ChatGPT (Codex)** untuk ide pendekatan, referensi kode, bantuan implementasi form/view/template CRUD Experience, serta pemeriksaan error. Bagian JSON dan dokumentasi akhir dilanjutkan pada checkpoint berikutnya.
+
+Catatan tahap sebelumnya:
 
 Konten yang ditampilkan di halaman ini (deskripsi project, pengalaman organisasi, skill, dan bio) aku tulis sendiri dari draft yang udah aku siapin duluan, bukan hasil karangan AI. Struktur dasar halaman dari Tutorial 1 aku kerjain sendiri, dan **Tutorial 2 (model, view, template, migrasi, serta unit test pertama untuk Experience) aku kerjain 100% sendiri tanpa bantuan AI sama sekali**. Untuk pengembangan lanjutan, aku tetap yang memimpin arah desain, konten, dan keputusan coding, dan aku pakai Claude (Claude Code) terutama buat **ngasih saran pendekatan** dan **bantu debugging** pas nemu error/bug teknis, beberapa contohnya:
 

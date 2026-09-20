@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block meta %}<title>Hapus Experience - {{ name }}</title>{% endblock meta %}
+{% block content %}
+<main>
+  <section class="experience-section">
+    <div class="container">
+      <h1>Hapus pengalaman?</h1>
+      <p>Pengalaman <strong>{{ experience.title }}</strong> akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.</p>
+      <form method="post" class="project-actions">
+        {% csrf_token %}
+        <button type="submit" class="button button-danger">Ya, hapus pengalaman</button>
+        <a href="{% url 'main:show_experience' %}" class="button button-secondary">Batal</a>
+      </form>
+    </div>
+  </section>
+</main>
+{% endblock content %}

@@ -9,6 +9,10 @@
         <p class="section-kicker">Perjalanan saya sejauh ini</p>
         <h1>Experience</h1>
 
+        <div class="project-actions">
+          <a class="button" href="{% url 'main:create_experience' %}">Tambah pengalaman</a>
+        </div>
+
         {% regroup experience_list by get_category_display as experience_groups %}
         {% for group in experience_groups %}
           <div class="experience-group">
@@ -36,8 +40,12 @@
                         Sedang berlangsung
                       </p>
                     {% else %}
-                      <p class="experience-status">Selesai</p>
+                      <p class="experience-status">Selesai &middot; {{ experience.ended_at|date:"d M Y" }}</p>
                     {% endif %}
+                    <div class="project-actions">
+                      <a class="button" href="{% url 'main:update_experience' experience.id %}" aria-label="Edit {{ experience.title }}">Edit</a>
+                      <a class="button button-danger" href="{% url 'main:delete_experience' experience.id %}" aria-label="Hapus {{ experience.title }}">Hapus</a>
+                    </div>
                   </div>
                 </article>
               {% endfor %}
