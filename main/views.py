@@ -14,6 +14,13 @@ from main.forms import ExperienceForm, ProjectForm
 from main.models import Experience, Project
 
 
+def _is_editor(user):
+    return (
+        user.is_authenticated
+        and user.groups.filter(name='Editor').exists()
+    )
+
+
 def show_main(request):
     last_login = request.COOKIES.get(
         'last_login', 'Belum ada sesi login / Cookie tidak ditemukan',
@@ -91,6 +98,7 @@ def show_experience(request):
         'experience_list': experiences,
         'title_query': request.GET.get('title', '').strip(),
         'status_query': request.GET.get('status', ''),
+        'is_editor': _is_editor(request.user),
         'active_page': 'experience',
     }
     return render(request, 'experience.html', context)
@@ -105,7 +113,12 @@ def get_experience_json(request):
         experiences = experiences.filter(title__icontains=title)
     if status in ('ongoing', 'completed'):
         experiences = experiences.filter(ended_at__isnull=(status == 'ongoing'))
-    return HttpResponse(serializers.serialize('json', experiences), content_type='application/json')
+    return HttpResponse(
+        serializers.serialize(
+            'json', experiences, use_natural_foreign_keys=True,
+        ),
+        content_type='application/json',
+    )
 
 
 def _experience_context(**extra):
@@ -131,23 +144,48 @@ def _experience_form(request, instance=None):
 
 
 @require_http_methods(['GET', 'POST'])
+@login_required(login_url='/login/')
 def create_experience(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
     return _experience_form(request)
 
 
 @require_http_methods(['GET', 'POST'])
+@login_required(login_url='/login/')
 def update_experience(request, experience_id):
+    if not (request.user.is_superuser or _is_editor(request.user)):
+        raise PermissionDenied
+
     return _experience_form(request, get_object_or_404(Experience, pk=experience_id))
 
 
 @require_http_methods(['GET', 'POST'])
+@login_required(login_url='/login/')
 def delete_experience(request, experience_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
     experience = get_object_or_404(Experience, pk=experience_id)
     if request.method == 'POST':
         experience.delete()
         messages.success(request, 'Pengalaman berhasil dihapus.')
         return redirect('main:show_experience')
     return render(request, 'experience_confirm_delete.html', _experience_context(experience=experience))
+
+
+@login_required(login_url='/login/')
+@require_http_methods(['POST'])
+def toggle_experience_star(request, experience_id):
+    experience = get_object_or_404(Experience, pk=experience_id)
+
+    if experience.starred_by.filter(pk=request.user.pk).exists():
+        experience.starred_by.remove(request.user)
+    else:
+        experience.starred_by.add(request.user)
+
+    return redirect('main:show_experience')
 
 
 def get_projects_json(request):

@@ -14,6 +14,7 @@ from main.views import (
     show_experience,
     show_main,
     show_projects,
+    toggle_experience_star,
     toggle_star,
 )
 
@@ -29,6 +30,7 @@ urlpatterns = [
     path('experience/add/', create_experience, name='create_experience'),
     path('experience/<uuid:experience_id>/edit/', update_experience, name='update_experience'),
     path('experience/<uuid:experience_id>/delete/', delete_experience, name='delete_experience'),
+    path('experience/<uuid:experience_id>/star/', toggle_experience_star, name='toggle_experience_star'),
     path('api/experience/', get_experience_json, name='get_experience_json'),
     path('projects/', show_projects, name='show_projects'),
     path('projects/add/', create_project, name='create_project'),
