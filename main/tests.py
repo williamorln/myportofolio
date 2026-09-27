@@ -1,6 +1,7 @@
 import uuid
 from unittest.mock import patch
 
+from django.contrib.auth.models import User
 from django.core import serializers
 from django.http import HttpResponse
 from django.test import Client, TestCase
@@ -227,3 +228,80 @@ class ProjectTest(TestCase):
         response = self.client.get(reverse('main:show_projects'))
 
         self.assertContains(response, 'href="https://github.com/williamorln/scele-notifier"')
+
+
+class AuthenticationAndAuthorizationTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('visitor', password='SafePass123!')
+        self.admin = User.objects.create_superuser(
+            'owner', 'owner@example.com', 'SafePass123!',
+        )
+        self.project = Project.objects.create(
+            title='Portfolio',
+            problem='Project work is scattered.',
+            solution='Collect it in one website.',
+            tech_stack='Django',
+        )
+
+    def test_register_login_cookie_and_logout(self):
+        response = self.client.post(reverse('main:register'), {
+            'username': 'newuser',
+            'password1': 'AnotherPass123!',
+            'password2': 'AnotherPass123!',
+        })
+        self.assertRedirects(response, reverse('main:login'))
+        self.assertTrue(User.objects.filter(username='newuser').exists())
+
+        response = self.client.post(reverse('main:login'), {
+            'username': 'newuser', 'password': 'AnotherPass123!',
+        })
+        self.assertRedirects(response, reverse('main:show_main'))
+        self.assertIn('last_login', response.cookies)
+        self.assertContains(self.client.get(reverse('main:show_main')), 'newuser')
+
+        response = self.client.get(reverse('main:logout'))
+        self.assertRedirects(response, reverse('main:show_main'))
+        self.assertEqual(response.cookies['last_login']['max-age'], 0)
+
+    def test_project_changes_are_limited_to_superuser(self):
+        create_url = reverse('main:create_project')
+        delete_url = reverse('main:delete_project', args=[self.project.pk])
+
+        self.assertRedirects(
+            self.client.get(create_url), f'{reverse("main:login")}?next={create_url}',
+        )
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.get(create_url).status_code, 403)
+        self.assertEqual(self.client.post(delete_url).status_code, 403)
+
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(create_url).status_code, 200)
+        response = self.client.get(reverse('main:show_projects'))
+        self.assertContains(response, 'Tambah Proyek')
+        self.assertContains(response, 'Hapus Proyek')
+
+    def test_logged_in_user_can_toggle_star(self):
+        star_url = reverse('main:toggle_star', args=[self.project.pk])
+        self.assertRedirects(
+            self.client.post(star_url), f'{reverse("main:login")}?next={star_url}',
+        )
+
+        self.client.force_login(self.user)
+        self.client.post(star_url)
+        self.assertTrue(self.project.starred_by.filter(pk=self.user.pk).exists())
+        self.assertContains(self.client.get(reverse('main:show_projects')), 'Unstar')
+
+        self.client.post(star_url)
+        self.assertFalse(self.project.starred_by.filter(pk=self.user.pk).exists())
+
+    def test_project_api_uses_username_instead_of_user_id(self):
+        self.project.starred_by.add(self.user)
+        response = self.client.get(reverse('main:get_projects_json'))
+        project_data = next(
+            item for item in response.json()
+            if item['pk'] == str(self.project.pk)
+        )
+        starred_by = project_data['fields']['starred_by']
+
+        self.assertEqual(starred_by, [['visitor']])
+        self.assertNotIn(self.user.pk, starred_by)

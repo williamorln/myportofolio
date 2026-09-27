@@ -106,6 +106,12 @@ h1, h2, h3 {
   color: var(--ink);
 }
 
+.nav-user {
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
 /* Dark mode toggle (checkbox hack, no JS) */
 .theme-toggle-input {
   position: absolute;
@@ -221,6 +227,13 @@ h1, h2, h3 {
 .hero-details {
   grid-area: details;
   min-width: 0;
+}
+
+.last-login {
+  margin-top: 1rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
 }
 
 .availability-badge {
@@ -1009,6 +1022,66 @@ body:has(#theme-toggle:checked) .experience-status-ongoing {
   flex-wrap: wrap;
   gap: 1.25rem;
   margin-top: 1rem;
+}
+
+.star-form {
+  display: inline;
+}
+
+.button-star {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--ink);
+}
+
+.button-star.is-starred {
+  background: var(--accent);
+}
+
+.star-count {
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 0.8rem;
+}
+
+.auth-section {
+  min-height: 65vh;
+  padding: 5rem 0;
+}
+
+.auth-container {
+  display: flex;
+  justify-content: center;
+}
+
+.auth-card {
+  width: min(100%, 520px);
+  padding: 2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.auth-card h1 {
+  margin-bottom: 1.5rem;
+}
+
+.auth-switch {
+  margin-top: 1.25rem;
+  color: var(--text-muted);
+}
+
+.form-help {
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.form-help ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
 }
 
 .project-actions .button {

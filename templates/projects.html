@@ -9,10 +9,12 @@
         <p class="section-kicker">Hal-hal yang pernah saya bangun</p>
         <div class="project-header">
           <h1>Projects</h1>
-          <a href="{% url 'main:create_project' %}" class="button project-add-button">
-            <span aria-hidden="true">+</span>
-            Tambah Proyek
-          </a>
+          {% if user.is_superuser %}
+            <a href="{% url 'main:create_project' %}" class="button project-add-button">
+              <span aria-hidden="true">+</span>
+              Tambah Proyek
+            </a>
+          {% endif %}
         </div>
 
         <form method="get" action="{% url 'main:show_projects' %}" class="project-search">
@@ -45,7 +47,10 @@
                   {% if project.project_url %}
                     <a href="{{ project.project_url }}" class="project-link" target="_blank" rel="noopener">View Project &rarr;</a>
                   {% endif %}
-                  {% include "components/project_delete_modal.html" with project=project %}
+                  {% include "components/project_star.html" with project=project %}
+                  {% if user.is_superuser %}
+                    {% include "components/project_delete_modal.html" with project=project %}
+                  {% endif %}
                 </div>
               </div>
             </article>

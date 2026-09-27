@@ -22,6 +22,13 @@
         <a href="{% url 'main:show_experience' %}"{% if active_page == 'experience' %} aria-current="page"{% endif %}>Experience</a>
         <a href="{% url 'main:show_projects' %}"{% if active_page == 'projects' %} aria-current="page"{% endif %}>Projects</a>
         <a href="{% url 'main:show_main' %}#contact">Contact</a>
+        {% if user.is_authenticated %}
+          <span class="nav-user">{{ user.username }}</span>
+          <a href="{% url 'main:logout' %}">Logout</a>
+        {% else %}
+          <a href="{% url 'main:login' %}">Login</a>
+          <a href="{% url 'main:register' %}">Register</a>
+        {% endif %}
       </nav>
       <input type="checkbox" id="theme-toggle" class="theme-toggle-input">
       <label for="theme-toggle" class="theme-toggle-label" aria-label="Toggle dark mode">
