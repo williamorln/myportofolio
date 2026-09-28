@@ -51,6 +51,9 @@ Proyek ini dibangun bertahap mengikuti rangkaian Tutorial dan Tugas Individu tia
 - **Individual Assignment 1** (7 September 2026) &mdash; Menambahkan section Skills, Experience, dan Projects, lalu redesign visual penuh ke gaya minimalis modern: dark mode toggle, sticky navigation, vertical timeline untuk Experience, dan format showcase Problem/Solution/Tech Stack untuk Projects.
 - **Tutorial 2** (9 September 2026) &mdash; Menerapkan pola MVT melalui app `main`, model `Experience`, context profil, halaman experience dinamis, routing aplikasi, migrasi database, dan unit test Django.
 - **Individual Assignment 2** (12&ndash;13 September 2026) &mdash; Menerapkan pola MVT yang sama untuk bagian Projects: model `Project`, migrasi skema sekaligus migrasi data (memindahkan project dari HTML statis ke database, lalu menghapus satu project yang sudah tidak relevan), halaman `/projects/` dinamis, registrasi model ke Django admin, serta unit test baru. Sekalian melengkapi data `Experience` dengan riwayat pengalaman asli beserta foto tiap event, menggantikan data uji coba yang sebelumnya ada di database.
+- **Tutorial 3 dan Individual Assignment 3** (September 2026) &mdash; Menambahkan form, CRUD, filter, dan endpoint JSON untuk Projects dan Experience.
+- **Tutorial 4** (27 September 2026) &mdash; Menambahkan register, login, logout, cookie `last_login`, pembatasan pengelolaan Projects, dan fitur star pada Projects.
+- **Individual Assignment 4** (27 September 2026) &mdash; Menerapkan empat tingkat akses pada Experience, peran Editor, star Experience, serta perlindungan data pengguna pada API JSON.
 
 ## Menjalankan Proyek Secara Lokal
 
@@ -114,9 +117,40 @@ python manage.py runserver
 
 Uji alur lewat `/experience/`: tambah pengalaman, edit deskripsi/status selesai, cari judulnya, buka JSON, kemudian hapus melalui konfirmasi. Tes otomatis memakai database sementara dan mencakup form invalid, edit tanpa membuat baris baru, CSRF, UUID tidak ditemukan, filter, deserialisasi, dan escaping HTML. Data portofolio lokal tidak dihapus oleh tes.
 
-Alur CRUD mengikuti tutorial dan belum memiliki pembatasan akun pemilik; pengunjung yang dapat mengakses form juga dapat mengubah data. CSRF melindungi permintaan lintas situs, bukan menggantikan otorisasi pengguna.
+Pada Tugas 3, alur CRUD ini belum memiliki pembatasan akun. Pembatasan autentikasi dan otorisasi kemudian ditambahkan pada Tugas 4.
 
 Pengumpulan Tugas 3 menggunakan **tautan commit GitHub yang telah di-push**, pada repositori publik, paling lambat **21 September 2026 pukul 23.59 WIB**. Tutorial 03 harus sudah selesai paling lambat 16 September 2026. Push atau pengumpulan tidak dilakukan oleh perintah pengujian di atas.
+
+## Authentication dan Authorization — Minggu 4
+
+Tugas 4 menerapkan autentikasi dan otorisasi pada bagian **Experience** yang dikembangkan di Tugas 3. Halaman daftar dan endpoint JSON tetap terbuka untuk umum. Perubahan data diperiksa di sisi server, sehingga menyembunyikan tombol di template bukan satu-satunya perlindungan.
+
+| Peran | Lihat | Star / Unstar | Tambah | Edit | Hapus |
+| --- | --- | --- | --- | --- | --- |
+| Pengunjung | Ya | Harus login | Tidak | Tidak | Tidak |
+| Pengguna biasa | Ya | Ya | Tidak | Tidak | Tidak |
+| Editor | Ya | Ya | Tidak | Ya | Tidak |
+| Superuser | Ya | Ya | Ya | Ya | Ya |
+
+Peran Editor menggunakan Django Group bernama `Editor`. Penetapan role hanya dilakukan oleh superuser melalui Django Admin:
+
+1. Buat superuser dengan `python manage.py createsuperuser` dan login ke `/admin/`.
+2. Buka **Authentication and Authorization → Groups**, lalu buat group bernama `Editor`.
+3. Buka akun pada menu **Users** dan masukkan akun yang dipilih ke group `Editor`.
+
+Endpoint baru `/experience/<uuid>/star/` hanya menerima `POST` dan dilindungi `{% csrf_token %}`. Relasi `ManyToManyField` memastikan satu pengguna hanya tercatat sekali pada satu experience. Tombol menampilkan status Star/Unstar dan jumlah total star. Endpoint `/api/experience/` tetap mendukung filter dari Tugas 3 dan menampilkan username pemberi star melalui natural key, bukan ID database internal.
+
+Verifikasi Tugas 4:
+
+```sh
+python manage.py migrate
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test
+python manage.py runserver
+```
+
+Tes otomatis memeriksa akses pengunjung, pengguna biasa, Editor, dan superuser; toggle star; penolakan metode selain POST; visibilitas tombol; CSRF; serta bentuk data pada API.
 
 ## Pertanyaan Reflektif
 
@@ -146,14 +180,6 @@ Pengumpulan Tugas 3 menggunakan **tautan commit GitHub yang telah di-push**, pad
 
 ## AI Disclosure
 
-Untuk Tugas 3, saya menggunakan **ChatGPT (Codex)** untuk ide pengembangan fitur, referensi pendekatan kode, bantuan implementasi form/view/template Experience, debugging, penyusunan tes otomatis, dan draf dokumentasi. Bantuan berfokus pada CRUD Experience, alur JSON/deserialisasi, serta pemeriksaan kesesuaian dengan checklist tugas.
+Saya menggunakan **GPT** untuk memberi ide pendekatan dan referensi implementasi, memeriksa checklist, serta membantu debugging pada alur permission, role Editor, fitur star, migrasi, dan tes otomatis. Pada tahap sebelumnya, saya juga menggunakan **Claude** untuk saran pendekatan dan debugging CSS serta model.
 
-Catatan penggunaan AI pada tahap sebelumnya:
-
-Konten yang ditampilkan di halaman ini (deskripsi project, pengalaman organisasi, skill, dan bio) aku tulis sendiri dari draft yang udah aku siapin duluan, bukan hasil karangan AI. Struktur dasar halaman dari Tutorial 1 aku kerjain sendiri, dan **Tutorial 2 (model, view, template, migrasi, serta unit test pertama untuk Experience) aku kerjain 100% sendiri tanpa bantuan AI sama sekali**. Untuk pengembangan lanjutan, aku tetap yang memimpin arah desain, konten, dan keputusan coding, dan aku pakai Claude (Claude Code) terutama buat **ngasih saran pendekatan** dan **bantu debugging** pas nemu error/bug teknis, beberapa contohnya:
-
-- Debug bug CSS Grid di hero section yang bikin halaman overflow ke samping saat dibuka di layar sempit/mobile.
-- Ngasih saran soal desain field model `Project` biar sesuai kebutuhan, dan bantu debug error di unit test yang disebabkan HTML auto-escaping pada tanda petik.
-- Bantu debug tipe field `thumbnail` yang ternyata bermasalah dipakai buat path foto lokal lewat Django admin.
-
-Semua kode dan konten tetap aku review, sesuaikan, dan pahami sebelum di-commit — keputusan desain, isi konten, dan arah coding tetap aku yang pegang.
+Saya tetap menentukan bagian portfolio yang dikembangkan, pembagian hak akses, desain antarmuka, isi konten, dan keputusan akhir implementasi. Seluruh perubahan saya tinjau dan sesuaikan dengan struktur project sebelum diuji dan di-commit.
