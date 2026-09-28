@@ -1,7 +1,7 @@
 import uuid
 from unittest.mock import patch
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.core import serializers
 from django.http import HttpResponse
 from django.test import Client, TestCase
@@ -14,6 +14,10 @@ from main.forms import ExperienceForm
 
 class ExperienceFlowTest(TestCase):
     def setUp(self):
+        self.admin = User.objects.create_superuser(
+            'experience_owner', 'owner@example.com', 'SafePass123!',
+        )
+        self.client.force_login(self.admin)
         self.payload = {
             'title': 'Research Assistant', 'description': 'Analisis data penelitian.',
             'category': 'research', 'thumbnail': '/static/img/research.jpg',
@@ -75,6 +79,7 @@ class ExperienceFlowTest(TestCase):
 
     def test_mutations_require_csrf(self):
         client = Client(enforce_csrf_checks=True)
+        client.force_login(self.admin)
         for url in (reverse('main:create_experience'), self.url('update'), self.url('delete')):
             self.assertEqual(client.post(url, self.payload).status_code, 403)
         response = client.get(reverse('main:create_experience'))
@@ -118,6 +123,133 @@ class ExperienceFlowTest(TestCase):
         self.assertEqual(page.context['experience_list'][0].title, self.experience.title)
         self.assertContains(page, '&lt;script&gt;alert(1)&lt;/script&gt;')
         self.assertNotContains(page, self.experience.title)
+
+
+class ExperienceAuthorizationTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            'regular_user', password='SafePass123!',
+        )
+        self.editor = User.objects.create_user(
+            'experience_editor', password='SafePass123!',
+        )
+        self.editor_group = Group.objects.create(name='Editor')
+        self.editor.groups.add(self.editor_group)
+        self.admin = User.objects.create_superuser(
+            'portfolio_owner', 'portfolio@example.com', 'SafePass123!',
+        )
+        self.experience = Experience.objects.create(
+            title='Volunteer Mentor',
+            description='Mendampingi peserta belajar pemrograman.',
+            category='volunteer',
+        )
+        self.payload = {
+            'title': 'Updated Volunteer Mentor',
+            'description': 'Mendampingi peserta dan menyiapkan materi.',
+            'category': 'volunteer',
+            'thumbnail': '',
+            'ended_at': '',
+        }
+
+    def url(self, action):
+        return reverse(
+            f'main:{action}_experience', args=[self.experience.pk],
+        )
+
+    def test_public_can_read_but_cannot_see_crud_controls(self):
+        response = self.client.get(reverse('main:show_experience'))
+
+        self.assertContains(response, self.experience.title)
+        self.assertContains(response, reverse(
+            'main:toggle_experience_star', args=[self.experience.pk],
+        ))
+        self.assertNotContains(response, reverse('main:create_experience'))
+        self.assertNotContains(response, self.url('update'))
+        self.assertNotContains(response, self.url('delete'))
+
+    def test_anonymous_user_is_redirected_to_login_for_every_action(self):
+        actions = [
+            ('get', reverse('main:create_experience')),
+            ('get', self.url('update')),
+            ('get', self.url('delete')),
+            ('post', reverse(
+                'main:toggle_experience_star', args=[self.experience.pk],
+            )),
+        ]
+
+        for method, url in actions:
+            with self.subTest(url=url):
+                response = getattr(self.client, method)(url)
+                self.assertRedirects(
+                    response, f'{reverse("main:login")}?next={url}',
+                )
+
+    def test_regular_user_can_star_but_cannot_change_experience(self):
+        self.client.force_login(self.user)
+        self.assertEqual(
+            self.client.get(reverse('main:create_experience')).status_code,
+            403,
+        )
+        self.assertEqual(self.client.get(self.url('update')).status_code, 403)
+        self.assertEqual(self.client.get(self.url('delete')).status_code, 403)
+
+        star_url = reverse(
+            'main:toggle_experience_star', args=[self.experience.pk],
+        )
+        self.assertRedirects(
+            self.client.post(star_url), reverse('main:show_experience'),
+        )
+        self.assertTrue(
+            self.experience.starred_by.filter(pk=self.user.pk).exists(),
+        )
+        self.assertContains(
+            self.client.get(reverse('main:show_experience')), 'Unstar',
+        )
+        self.client.post(star_url)
+        self.assertFalse(
+            self.experience.starred_by.filter(pk=self.user.pk).exists(),
+        )
+        self.assertEqual(self.client.get(star_url).status_code, 405)
+
+    def test_editor_can_update_but_cannot_create_or_delete(self):
+        self.client.force_login(self.editor)
+        self.assertEqual(
+            self.client.get(reverse('main:create_experience')).status_code,
+            403,
+        )
+        self.assertEqual(self.client.get(self.url('delete')).status_code, 403)
+        self.assertEqual(self.client.get(self.url('update')).status_code, 200)
+        self.assertRedirects(
+            self.client.post(self.url('update'), self.payload),
+            reverse('main:show_experience'),
+        )
+        self.experience.refresh_from_db()
+        self.assertEqual(self.experience.title, self.payload['title'])
+
+        response = self.client.get(reverse('main:show_experience'))
+        self.assertContains(response, self.url('update'))
+        self.assertNotContains(response, reverse('main:create_experience'))
+        self.assertNotContains(response, self.url('delete'))
+
+    def test_superuser_has_all_experience_controls(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('main:show_experience'))
+
+        self.assertContains(response, reverse('main:create_experience'))
+        self.assertContains(response, self.url('update'))
+        self.assertContains(response, self.url('delete'))
+
+    def test_experience_api_uses_username_instead_of_internal_id(self):
+        self.experience.starred_by.add(self.user)
+        response = self.client.get(reverse('main:get_experience_json'))
+        experience_data = next(
+            item for item in response.json()
+            if item['pk'] == str(self.experience.pk)
+        )
+        starred_by = experience_data['fields']['starred_by']
+
+        self.assertEqual(starred_by, [['regular_user']])
+        self.assertNotIn(self.user.pk, starred_by)
 
 
 class MainTest(TestCase):

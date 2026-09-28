@@ -10,7 +10,9 @@
         <h1>Experience</h1>
 
         <div class="project-actions">
-          <a class="button" href="{% url 'main:create_experience' %}">Tambah pengalaman</a>
+          {% if user.is_superuser %}
+            <a class="button" href="{% url 'main:create_experience' %}">Tambah pengalaman</a>
+          {% endif %}
           <a href="{% url 'main:get_experience_json' %}?{{ request.GET.urlencode }}">Lihat JSON</a>
         </div>
         <form method="get" class="experience-filters">
@@ -61,8 +63,13 @@
                       <p class="experience-status">Selesai &middot; {{ experience.ended_at|date:"d M Y" }}</p>
                     {% endif %}
                     <div class="project-actions">
-                      <a class="button" href="{% url 'main:update_experience' experience.id %}" aria-label="Edit {{ experience.title }}">Edit</a>
-                      <a class="button button-danger" href="{% url 'main:delete_experience' experience.id %}" aria-label="Hapus {{ experience.title }}">Hapus</a>
+                      {% include "components/experience_star.html" with experience=experience %}
+                      {% if user.is_superuser or is_editor %}
+                        <a class="button" href="{% url 'main:update_experience' experience.id %}" aria-label="Edit {{ experience.title }}">Edit</a>
+                      {% endif %}
+                      {% if user.is_superuser %}
+                        <a class="button button-danger" href="{% url 'main:delete_experience' experience.id %}" aria-label="Hapus {{ experience.title }}">Hapus</a>
+                      {% endif %}
                     </div>
                   </div>
                 </article>
