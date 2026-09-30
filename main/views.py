@@ -6,9 +6,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core import serializers
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 
 from main.forms import ExperienceForm, ProjectForm
 from main.models import Experience, Project
@@ -190,35 +190,69 @@ def toggle_experience_star(request, experience_id):
 
 def get_projects_json(request):
     title_query = request.GET.get('title', '').strip()
-    projects = Project.objects.all()
+    projects = Project.objects.prefetch_related('starred_by').order_by(
+        '-created_at', 'title', 'pk',
+    )
 
     if title_query:
         projects = projects.filter(title__icontains=title_query)
 
-    projects_json = serializers.serialize(
-        'json', projects, use_natural_foreign_keys=True,
-    )
-    return HttpResponse(projects_json, content_type='application/json')
+    data = []
+    for project in projects:
+        starred_users = list(project.starred_by.all())
+        data.append({
+            'pk': str(project.pk),
+            'fields': {
+                'title': project.title,
+                'problem': project.problem,
+                'solution': project.solution,
+                'tech_stack': project.tech_stack,
+                'project_url': project.project_url,
+                'star_count': len(starred_users),
+                'is_starred': (
+                    request.user.is_authenticated
+                    and any(user.pk == request.user.pk for user in starred_users)
+                ),
+                'starred_by_names': ', '.join(
+                    user.username for user in starred_users
+                ),
+            },
+        })
+
+    return JsonResponse(data, safe=False)
 
 
 def show_projects(request):
-    json_response = get_projects_json(request)
-    projects = serializers.deserialize(
-        'json',
-        json_response.content.decode('utf-8'),
-    )
-    projects = [project.object for project in projects]
     title_query = request.GET.get('title', '').strip()
 
     context = {
         'name': 'William Orlando',
         'npm': '2506657390',
         'study_program': 'S1 Sistem Informasi',
-        'project_list': projects,
         'title_query': title_query,
+        'form': ProjectForm(),
         'active_page': 'projects',
     }
     return render(request, 'projects.html', context)
+
+
+@require_POST
+def create_project_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {'message': 'Hanya pemilik portofolio yang dapat menambahkan proyek.'},
+            status=403,
+        )
+
+    form = ProjectForm(request.POST)
+    if form.is_valid():
+        project = form.save()
+        return JsonResponse(
+            {'message': 'Proyek berhasil ditambahkan.', 'pk': str(project.pk)},
+            status=201,
+        )
+
+    return JsonResponse({'errors': form.errors.get_json_data()}, status=400)
 
 
 @login_required(login_url='/login/')

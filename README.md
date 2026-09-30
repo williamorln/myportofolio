@@ -37,6 +37,7 @@ myportofolio/
 │   └── index.html         # halaman utama portofolio
 ├── static/
 │   ├── css/style.css
+│   ├── js/toast.js
 │   └── img/
 ├── manage.py
 └── requirements.txt
@@ -54,6 +55,7 @@ Proyek ini dibangun bertahap mengikuti rangkaian Tutorial dan Tugas Individu tia
 - **Tutorial 3 dan Individual Assignment 3** (September 2026) &mdash; Menambahkan form, CRUD, filter, dan endpoint JSON untuk Projects dan Experience.
 - **Tutorial 4** (27 September 2026) &mdash; Menambahkan register, login, logout, cookie `last_login`, pembatasan pengelolaan Projects, dan fitur star pada Projects.
 - **Individual Assignment 4** (27 September 2026) &mdash; Menerapkan empat tingkat akses pada Experience, peran Editor, star Experience, serta perlindungan data pengguna pada API JSON.
+- **Tutorial 5** (30 September 2026) &mdash; Mengubah halaman Projects menjadi interaktif dengan Fetch API, pencarian debounce, modal dan form AJAX, toast, serta perlindungan XSS di browser dan server.
 
 ## Menjalankan Proyek Secara Lokal
 
@@ -152,6 +154,25 @@ python manage.py runserver
 
 Tes otomatis memeriksa akses pengunjung, pengguna biasa, Editor, dan superuser; toggle star; penolakan metode selain POST; visibilitas tombol; CSRF; serta bentuk data pada API.
 
+## JavaScript dan AJAX — Minggu 5
+
+Halaman `/projects/` memuat kerangka HTML terlebih dahulu, kemudian mengambil data dari `/api/projects/` melalui Fetch API. Respons API dirakit manual agar setiap kartu memperoleh jumlah star, nama pemberi star, serta status star milik pengguna yang sedang login. Pencarian berjalan 300 milidetik setelah pengguna berhenti mengetik dan request lama dibatalkan dengan `AbortController`.
+
+Superuser dapat membuka modal tambah proyek tanpa berpindah halaman. Form dikirim ke `/projects/add-ajax/` menggunakan `FormData` dan header `X-CSRFToken`. Respons berhasil menutup modal, menampilkan toast, dan memuat ulang daftar proyek tanpa reload halaman. Endpoint tetap memeriksa `is_superuser` di server dan mengembalikan JSON 403 bagi pengunjung atau pengguna biasa.
+
+Data dari JSON di-escape sebelum dipasang melalui `innerHTML`. `ProjectForm` juga menghapus tag HTML dari judul, problem, solution, dan tech stack, serta menolak judul yang hanya berisi tag. Kedua lapisan dipakai bersama karena sanitasi input tidak menggantikan escaping ketika data ditampilkan.
+
+Verifikasi Tutorial 5:
+
+```sh
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test
+python manage.py runserver
+```
+
+Tes mencakup struktur API AJAX, pencarian, status star per pengguna, hak akses endpoint tambah, validasi form, sanitasi HTML, metode HTTP, dan perlindungan CSRF.
+
 ## Pertanyaan Reflektif
 
 ### Tugas 1
@@ -180,6 +201,6 @@ Tes otomatis memeriksa akses pengunjung, pengguna biasa, Editor, dan superuser; 
 
 ## AI Disclosure
 
-Saya menggunakan **GPT** untuk memberi ide pendekatan dan referensi implementasi, memeriksa checklist, serta membantu debugging pada alur permission, role Editor, fitur star, migrasi, dan tes otomatis. Pada tahap sebelumnya, saya juga menggunakan **Claude** untuk saran pendekatan dan debugging CSS serta model.
+Saya menggunakan **GPT** untuk memberi ide pendekatan dan referensi implementasi, memeriksa checklist, serta membantu debugging pada alur permission, role Editor, fitur star, migrasi, dan tes otomatis. Pada Tutorial 5, GPT juga membantu menyesuaikan contoh AJAX dengan field `problem` dan `solution`, meninjau perlindungan CSRF/XSS, serta memeriksa test endpoint. Pada tahap sebelumnya, saya juga menggunakan **Claude** untuk saran pendekatan dan debugging CSS serta model.
 
 Saya tetap menentukan bagian portfolio yang dikembangkan, pembagian hak akses, desain antarmuka, isi konten, dan keputusan akhir implementasi. Seluruh perubahan saya tinjau dan sesuaikan dengan struktur project sebelum diuji dan di-commit.

@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from main.models import Experience, Project
-from main.forms import ExperienceForm
+from main.forms import ExperienceForm, ProjectForm
 
 
 class ExperienceFlowTest(TestCase):
@@ -339,27 +339,82 @@ class ProjectTest(TestCase):
         self.assertEqual(str(self.project), 'SCELE Notifier')
         self.assertFalse(self.project.project_url)
 
-    def test_projects_page_shows_data(self):
+    def test_projects_page_loads_ajax_shell(self):
         response = self.client.get(reverse('main:show_projects'))
 
-        self.assertContains(response, self.project.title)
-        self.assertContains(response, self.project.problem)
-        self.assertContains(response, self.project.solution)
-        self.assertContains(response, self.project.tech_stack)
-        self.assertNotContains(response, 'View Project')
+        self.assertContains(response, 'id="grid"')
+        self.assertContains(response, reverse('main:get_projects_json'))
+        self.assertContains(response, 'fetchProjects(searchInput.value.trim())')
+        self.assertContains(response, 'function escapeHtml(value)')
+        self.assertNotContains(response, self.project.title)
 
-    def test_empty_projects_page(self):
+    def test_projects_api_returns_data_and_supports_search(self):
+        response = self.client.get(reverse('main:get_projects_json'))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()[0]
+        self.assertEqual(data['pk'], str(self.project.pk))
+        self.assertEqual(data['fields']['title'], self.project.title)
+        self.assertEqual(data['fields']['problem'], self.project.problem)
+        self.assertEqual(data['fields']['solution'], self.project.solution)
+        self.assertEqual(data['fields']['tech_stack'], self.project.tech_stack)
+        self.assertEqual(data['fields']['star_count'], 0)
+        self.assertFalse(data['fields']['is_starred'])
+
+        filtered_data = self.client.get(reverse('main:get_projects_json'), {
+            'title': 'scele',
+        }).json()
+        self.assertIn(str(self.project.pk), [item['pk'] for item in filtered_data])
+        self.assertTrue(all(
+            'scele' in item['fields']['title'].lower()
+            for item in filtered_data
+        ))
+        self.assertEqual(
+            self.client.get(reverse('main:get_projects_json'), {
+                'title': 'tidak ada',
+            }).json(),
+            [],
+        )
+
+    def test_empty_projects_api(self):
         Project.objects.all().delete()
-        response = self.client.get(reverse('main:show_projects'))
+        response = self.client.get(reverse('main:get_projects_json'))
+        self.assertEqual(response.json(), [])
 
-        self.assertContains(response, 'Belum ada project yang ditambahkan.')
-
-    def test_project_with_url_shows_link(self):
+    def test_project_with_url_is_in_api(self):
         self.project.project_url = 'https://github.com/williamorln/scele-notifier'
         self.project.save()
-        response = self.client.get(reverse('main:show_projects'))
+        response = self.client.get(reverse('main:get_projects_json'))
 
-        self.assertContains(response, 'href="https://github.com/williamorln/scele-notifier"')
+        self.assertEqual(
+            response.json()[0]['fields']['project_url'],
+            self.project.project_url,
+        )
+
+    def test_project_form_strips_html(self):
+        form = ProjectForm(data={
+            'title': '<b>Portfolio</b>',
+            'problem': '<i>Data</i> tersebar',
+            'solution': '<strong>Satu</strong> halaman',
+            'tech_stack': '<span>Django</span>',
+            'project_url': '',
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        project = form.save()
+        self.assertEqual(project.title, 'Portfolio')
+        self.assertEqual(project.problem, 'Data tersebar')
+        self.assertEqual(project.solution, 'Satu halaman')
+        self.assertEqual(project.tech_stack, 'Django')
+
+    def test_project_form_rejects_title_containing_only_html(self):
+        form = ProjectForm(data={
+            'title': '<img src=x onerror=alert(1)>',
+            'problem': 'Masalah',
+            'solution': 'Solusi',
+            'tech_stack': 'Django',
+            'project_url': '',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('Nama proyek tidak boleh hanya berisi tag HTML.', form.errors['title'])
 
 
 class AuthenticationAndAuthorizationTest(TestCase):
@@ -398,19 +453,26 @@ class AuthenticationAndAuthorizationTest(TestCase):
     def test_project_changes_are_limited_to_superuser(self):
         create_url = reverse('main:create_project')
         delete_url = reverse('main:delete_project', args=[self.project.pk])
+        ajax_url = reverse('main:create_project_ajax')
 
         self.assertRedirects(
             self.client.get(create_url), f'{reverse("main:login")}?next={create_url}',
         )
+        self.assertEqual(self.client.post(ajax_url).status_code, 403)
         self.client.force_login(self.user)
         self.assertEqual(self.client.get(create_url).status_code, 403)
         self.assertEqual(self.client.post(delete_url).status_code, 403)
+        self.assertEqual(self.client.post(ajax_url).status_code, 403)
+        self.assertNotContains(
+            self.client.get(reverse('main:show_projects')),
+            'id="add-project-modal"',
+        )
 
         self.client.force_login(self.admin)
         self.assertEqual(self.client.get(create_url).status_code, 200)
         response = self.client.get(reverse('main:show_projects'))
         self.assertContains(response, 'Tambah Proyek')
-        self.assertContains(response, 'Hapus Proyek')
+        self.assertContains(response, 'id="add-project-modal"')
 
     def test_logged_in_user_can_toggle_star(self):
         star_url = reverse('main:toggle_star', args=[self.project.pk])
@@ -421,7 +483,9 @@ class AuthenticationAndAuthorizationTest(TestCase):
         self.client.force_login(self.user)
         self.client.post(star_url)
         self.assertTrue(self.project.starred_by.filter(pk=self.user.pk).exists())
-        self.assertContains(self.client.get(reverse('main:show_projects')), 'Unstar')
+        project_data = self.client.get(reverse('main:get_projects_json')).json()[0]
+        self.assertTrue(project_data['fields']['is_starred'])
+        self.assertEqual(project_data['fields']['star_count'], 1)
 
         self.client.post(star_url)
         self.assertFalse(self.project.starred_by.filter(pk=self.user.pk).exists())
@@ -433,7 +497,58 @@ class AuthenticationAndAuthorizationTest(TestCase):
             item for item in response.json()
             if item['pk'] == str(self.project.pk)
         )
-        starred_by = project_data['fields']['starred_by']
+        self.assertEqual(project_data['fields']['starred_by_names'], 'visitor')
+        self.assertNotIn('starred_by', project_data['fields'])
 
-        self.assertEqual(starred_by, [['visitor']])
-        self.assertNotIn(self.user.pk, starred_by)
+    def test_create_project_ajax(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('main:create_project_ajax'), {
+            'title': 'Project AJAX',
+            'problem': 'Halaman harus dimuat ulang.',
+            'solution': 'Tambah data memakai Fetch API.',
+            'tech_stack': 'Django, JavaScript',
+            'project_url': 'https://example.com/project-ajax',
+        })
+
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('pk', response.json())
+        self.assertTrue(Project.objects.filter(title='Project AJAX').exists())
+
+    def test_create_project_ajax_returns_validation_errors(self):
+        self.client.force_login(self.admin)
+        before = Project.objects.count()
+        response = self.client.post(reverse('main:create_project_ajax'), {
+            'title': '<img src=x onerror=alert(1)>',
+            'problem': 'Masalah',
+            'solution': 'Solusi',
+            'tech_stack': 'Django',
+            'project_url': '',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('title', response.json()['errors'])
+        self.assertEqual(Project.objects.count(), before)
+
+    def test_create_project_ajax_requires_post_and_csrf(self):
+        ajax_url = reverse('main:create_project_ajax')
+        self.assertEqual(self.client.get(ajax_url).status_code, 405)
+
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.admin)
+        payload = {
+            'title': 'CSRF Test',
+            'problem': 'Masalah',
+            'solution': 'Solusi',
+            'tech_stack': 'Django',
+            'project_url': '',
+        }
+        self.assertEqual(client.post(ajax_url, payload).status_code, 403)
+
+        page = client.get(reverse('main:show_projects'))
+        token = page.cookies['csrftoken'].value
+        response = client.post(
+            ajax_url,
+            payload,
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(response.status_code, 201)
