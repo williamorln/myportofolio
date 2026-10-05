@@ -4,9 +4,8 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.core import serializers
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
@@ -84,13 +83,21 @@ def logout_user(request):
     return response
 
 
+def _filtered_experiences(request):
+    experiences = Experience.objects.prefetch_related('starred_by').order_by(
+        'category', 'title', 'pk',
+    )
+    title = request.GET.get('title', '').strip()
+    status = request.GET.get('status', '')
+    if title:
+        experiences = experiences.filter(title__icontains=title)
+    if status in ('ongoing', 'completed'):
+        experiences = experiences.filter(ended_at__isnull=(status == 'ongoing'))
+    return experiences
+
+
 def show_experience(request):
-    # Use the same filtered JSON delivery as the public API, then restore objects
-    # so template properties (including is_ongoing) remain available.
-    json_response = get_experience_json(request)
-    experiences = [item.object for item in serializers.deserialize(
-        'json', json_response.content.decode('utf-8'),
-    )]
+    experiences = list(_filtered_experiences(request))
     context = {
         'name': 'William Orlando',
         'npm': '2506657390',
@@ -105,20 +112,35 @@ def show_experience(request):
 
 
 def get_experience_json(request):
-    """Deliver a consistently ordered, optionally filtered experience collection."""
-    experiences = Experience.objects.all().order_by('category', 'title', 'pk')
-    title = request.GET.get('title', '').strip()
-    status = request.GET.get('status', '')
-    if title:
-        experiences = experiences.filter(title__icontains=title)
-    if status in ('ongoing', 'completed'):
-        experiences = experiences.filter(ended_at__isnull=(status == 'ongoing'))
-    return HttpResponse(
-        serializers.serialize(
-            'json', experiences, use_natural_foreign_keys=True,
-        ),
-        content_type='application/json',
-    )
+    """Return filtered experience data with request-specific star details."""
+    data = []
+    for experience in _filtered_experiences(request):
+        starred_users = list(experience.starred_by.all())
+        data.append({
+            'pk': str(experience.pk),
+            'fields': {
+                'title': experience.title,
+                'description': experience.description,
+                'category': experience.category,
+                'category_display': experience.get_category_display(),
+                'thumbnail': experience.thumbnail,
+                'started_at': experience.started_at.isoformat(),
+                'ended_at': (
+                    experience.ended_at.isoformat()
+                    if experience.ended_at else None
+                ),
+                'is_ongoing': experience.is_ongoing,
+                'star_count': len(starred_users),
+                'is_starred': (
+                    request.user.is_authenticated
+                    and any(user.pk == request.user.pk for user in starred_users)
+                ),
+                'starred_by_names': ', '.join(
+                    user.username for user in starred_users
+                ),
+            },
+        })
+    return JsonResponse(data, safe=False)
 
 
 def _experience_context(**extra):
@@ -152,6 +174,32 @@ def create_experience(request):
     return _experience_form(request)
 
 
+@require_POST
+def create_experience_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {
+                'message': (
+                    'Hanya pemilik portofolio yang dapat menambahkan pengalaman.'
+                ),
+            },
+            status=403,
+        )
+
+    form = ExperienceForm(request.POST)
+    if form.is_valid():
+        experience = form.save()
+        return JsonResponse(
+            {
+                'message': 'Pengalaman berhasil ditambahkan.',
+                'pk': str(experience.pk),
+            },
+            status=201,
+        )
+
+    return JsonResponse({'errors': form.errors.get_json_data()}, status=400)
+
+
 @require_http_methods(['GET', 'POST'])
 @login_required(login_url='/login/')
 def update_experience(request, experience_id):
@@ -182,8 +230,16 @@ def toggle_experience_star(request, experience_id):
 
     if experience.starred_by.filter(pk=request.user.pk).exists():
         experience.starred_by.remove(request.user)
+        is_starred = False
     else:
         experience.starred_by.add(request.user)
+        is_starred = True
+
+    if request.headers.get('Accept') == 'application/json':
+        return JsonResponse({
+            'is_starred': is_starred,
+            'star_count': experience.starred_by.count(),
+        })
 
     return redirect('main:show_experience')
 

@@ -1,9 +1,6 @@
 import uuid
-from unittest.mock import patch
 
 from django.contrib.auth.models import Group, User
-from django.core import serializers
-from django.http import HttpResponse
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -80,7 +77,12 @@ class ExperienceFlowTest(TestCase):
     def test_mutations_require_csrf(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.admin)
-        for url in (reverse('main:create_experience'), self.url('update'), self.url('delete')):
+        for url in (
+            reverse('main:create_experience'),
+            reverse('main:create_experience_ajax'),
+            self.url('update'),
+            self.url('delete'),
+        ):
             self.assertEqual(client.post(url, self.payload).status_code, 403)
         response = client.get(reverse('main:create_experience'))
         token = response.cookies['csrftoken'].value
@@ -95,14 +97,17 @@ class ExperienceFlowTest(TestCase):
         self.assertEqual(self.client.put(self.url('update')).status_code, 405)
         self.assertEqual(self.client.delete(self.url('delete')).status_code, 405)
 
-    def test_json_filters_and_round_trip(self):
+    def test_json_filters_and_fields(self):
         response = self.client.get(reverse('main:get_experience_json'), {'title': ' unique ', 'status': 'ongoing'})
         self.assertEqual(response['Content-Type'], 'application/json')
         self.assertEqual(len(response.json()), 1)
-        restored = list(serializers.deserialize('json', response.content))[0].object
-        self.assertEqual(restored.pk, self.experience.pk)
-        self.assertEqual(restored.description, self.experience.description)
-        self.assertTrue(restored.is_ongoing)
+        item = response.json()[0]
+        self.assertEqual(item['pk'], str(self.experience.pk))
+        self.assertEqual(item['fields']['description'], self.experience.description)
+        self.assertEqual(item['fields']['category_display'], 'Volunteer')
+        self.assertTrue(item['fields']['is_ongoing'])
+        self.assertEqual(item['fields']['star_count'], 0)
+        self.assertFalse(item['fields']['is_starred'])
         self.assertEqual(self.client.get(reverse('main:get_experience_json'), {
             'title': 'Unique', 'status': 'completed',
         }).json(), [])
@@ -114,15 +119,54 @@ class ExperienceFlowTest(TestCase):
         response = self.client.get(reverse('main:show_experience'), {'title': 'not-a-match'})
         self.assertContains(response, 'Tidak ada pengalaman yang cocok.')
 
-    def test_page_uses_deserialized_json_and_escapes_content(self):
+    def test_page_escapes_content(self):
         self.experience.title = '<script>alert(1)</script>'
-        response = HttpResponse(serializers.serialize('json', [self.experience]), content_type='application/json')
-        with patch('main.views.get_experience_json', return_value=response) as endpoint:
-            page = self.client.get(reverse('main:show_experience'))
-        endpoint.assert_called_once()
-        self.assertEqual(page.context['experience_list'][0].title, self.experience.title)
+        self.experience.save()
+        page = self.client.get(reverse('main:show_experience'))
         self.assertContains(page, '&lt;script&gt;alert(1)&lt;/script&gt;')
         self.assertNotContains(page, self.experience.title)
+
+    def test_experience_form_strips_html(self):
+        form = ExperienceForm(data={
+            **self.payload,
+            'title': '<b>Research Assistant</b>',
+            'description': '<em>Analisis</em> data penelitian.',
+            'thumbnail': '<span>/static/img/research.jpg</span>',
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        experience = form.save()
+        self.assertEqual(experience.title, 'Research Assistant')
+        self.assertEqual(experience.description, 'Analisis data penelitian.')
+        self.assertEqual(experience.thumbnail, '/static/img/research.jpg')
+
+    def test_experience_form_rejects_html_only_text(self):
+        for field in ('title', 'description'):
+            with self.subTest(field=field):
+                form = ExperienceForm(data={
+                    **self.payload,
+                    field: '<img src=x onerror=alert(1)>',
+                })
+                self.assertFalse(form.is_valid())
+                self.assertIn(field, form.errors)
+
+    def test_create_experience_ajax(self):
+        before = Experience.objects.count()
+        response = self.client.post(
+            reverse('main:create_experience_ajax'), self.payload,
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('pk', response.json())
+        self.assertEqual(Experience.objects.count(), before + 1)
+
+        invalid = self.client.post(reverse('main:create_experience_ajax'), {
+            **self.payload, 'title': '<img src=x onerror=alert(1)>',
+        })
+        self.assertEqual(invalid.status_code, 400)
+        self.assertIn('title', invalid.json()['errors'])
+
+    def test_create_experience_ajax_requires_post(self):
+        response = self.client.get(reverse('main:create_experience_ajax'))
+        self.assertEqual(response.status_code, 405)
 
 
 class ExperienceAuthorizationTest(TestCase):
@@ -166,6 +210,10 @@ class ExperienceAuthorizationTest(TestCase):
         self.assertNotContains(response, reverse('main:create_experience'))
         self.assertNotContains(response, self.url('update'))
         self.assertNotContains(response, self.url('delete'))
+        self.assertEqual(
+            self.client.post(reverse('main:create_experience_ajax')).status_code,
+            403,
+        )
 
     def test_anonymous_user_is_redirected_to_login_for_every_action(self):
         actions = [
@@ -192,6 +240,10 @@ class ExperienceAuthorizationTest(TestCase):
         )
         self.assertEqual(self.client.get(self.url('update')).status_code, 403)
         self.assertEqual(self.client.get(self.url('delete')).status_code, 403)
+        self.assertEqual(
+            self.client.post(reverse('main:create_experience_ajax')).status_code,
+            403,
+        )
 
         star_url = reverse(
             'main:toggle_experience_star', args=[self.experience.pk],
@@ -211,6 +263,17 @@ class ExperienceAuthorizationTest(TestCase):
         )
         self.assertEqual(self.client.get(star_url).status_code, 405)
 
+    def test_logged_in_user_can_toggle_star_with_ajax(self):
+        self.client.force_login(self.user)
+        star_url = reverse(
+            'main:toggle_experience_star', args=[self.experience.pk],
+        )
+        response = self.client.post(
+            star_url, HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'is_starred': True, 'star_count': 1})
+
     def test_editor_can_update_but_cannot_create_or_delete(self):
         self.client.force_login(self.editor)
         self.assertEqual(
@@ -218,6 +281,10 @@ class ExperienceAuthorizationTest(TestCase):
             403,
         )
         self.assertEqual(self.client.get(self.url('delete')).status_code, 403)
+        self.assertEqual(
+            self.client.post(reverse('main:create_experience_ajax')).status_code,
+            403,
+        )
         self.assertEqual(self.client.get(self.url('update')).status_code, 200)
         self.assertRedirects(
             self.client.post(self.url('update'), self.payload),
@@ -246,10 +313,10 @@ class ExperienceAuthorizationTest(TestCase):
             item for item in response.json()
             if item['pk'] == str(self.experience.pk)
         )
-        starred_by = experience_data['fields']['starred_by']
-
-        self.assertEqual(starred_by, [['regular_user']])
-        self.assertNotIn(self.user.pk, starred_by)
+        self.assertEqual(
+            experience_data['fields']['starred_by_names'], 'regular_user',
+        )
+        self.assertNotIn('starred_by', experience_data['fields'])
 
 
 class MainTest(TestCase):
