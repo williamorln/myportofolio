@@ -86,15 +86,6 @@
       gridContainer.classList.toggle("hide", !showGrid);
     }
 
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
-    }
-
     function buildProjectCardElement(item) {
       const project = item.fields;
       const projectId = item.pk;
@@ -200,21 +191,6 @@
       searchProjects();
     });
 
-    function getCookie(name) {
-      let cookieValue = null;
-      if (document.cookie) {
-        const cookies = document.cookie.split(";");
-        for (const item of cookies) {
-          const cookie = item.trim();
-          if (cookie.startsWith(`${name}=`)) {
-            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-            break;
-          }
-        }
-      }
-      return cookieValue;
-    }
-
     function closeProjectModal() {
       const modal = document.getElementById("add-project-modal");
       if (modal && modal.matches(":popover-open")) modal.hidePopover();
@@ -239,9 +215,10 @@
           showToast("Berhasil", "Proyek baru berhasil ditambahkan!", "success");
           fetchProjects(searchInput.value.trim());
         } else {
-          const errorMessages = result.errors
-            ? Object.values(result.errors).flat().map((error) => error.message)
-            : [result.message || `Terjadi kesalahan (status ${response.status}).`];
+          const errorMessages = getFormErrorMessages(
+            result,
+            `Terjadi kesalahan (status ${response.status}).`,
+          );
           showToast("Gagal menambahkan proyek", errorMessages.join(" "), "error");
         }
       } catch (error) {

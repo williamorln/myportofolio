@@ -97,15 +97,14 @@ def _filtered_experiences(request):
 
 
 def show_experience(request):
-    experiences = list(_filtered_experiences(request))
     context = {
         'name': 'William Orlando',
         'npm': '2506657390',
         'study_program': 'S1 Sistem Informasi',
-        'experience_list': experiences,
         'title_query': request.GET.get('title', '').strip(),
         'status_query': request.GET.get('status', ''),
         'is_editor': _is_editor(request.user),
+        'form': ExperienceForm(),
         'active_page': 'experience',
     }
     return render(request, 'experience.html', context)

@@ -46,7 +46,16 @@ class ExperienceForm(ModelForm):
         return description
 
     def clean_thumbnail(self):
-        return strip_tags(self.cleaned_data.get('thumbnail') or '').strip()
+        thumbnail = strip_tags(
+            self.cleaned_data.get('thumbnail') or '',
+        ).strip()
+        if thumbnail and not thumbnail.lower().startswith(
+            ('https://', 'http://', '/static/'),
+        ):
+            raise ValidationError(
+                'Gunakan URL HTTP(S) atau path gambar yang dimulai dengan /static/.',
+            )
+        return thumbnail
 
 
 class ProjectForm(ModelForm):

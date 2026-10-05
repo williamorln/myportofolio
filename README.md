@@ -37,7 +37,10 @@ myportofolio/
 │   └── index.html         # halaman utama portofolio
 ├── static/
 │   ├── css/style.css
-│   ├── js/toast.js
+│   ├── js/
+│   │   ├── ajax-utils.js
+│   │   ├── experience.js
+│   │   └── toast.js
 │   └── img/
 ├── manage.py
 └── requirements.txt
@@ -56,6 +59,7 @@ Proyek ini dibangun bertahap mengikuti rangkaian Tutorial dan Tugas Individu tia
 - **Tutorial 4** (27 September 2026) &mdash; Menambahkan register, login, logout, cookie `last_login`, pembatasan pengelolaan Projects, dan fitur star pada Projects.
 - **Individual Assignment 4** (27 September 2026) &mdash; Menerapkan empat tingkat akses pada Experience, peran Editor, star Experience, serta perlindungan data pengguna pada API JSON.
 - **Tutorial 5** (30 September 2026) &mdash; Mengubah halaman Projects menjadi interaktif dengan Fetch API, pencarian debounce, modal dan form AJAX, toast, serta perlindungan XSS di browser dan server.
+- **Individual Assignment 5** (5 Oktober 2026) &mdash; Menerapkan pola AJAX secara end-to-end pada Experience, termasuk filter status, pencarian debounce, modal tambah, star tanpa reload, reusable helper, dan perlindungan XSS.
 
 ## Menjalankan Proyek Secara Lokal
 
@@ -173,6 +177,14 @@ python manage.py runserver
 
 Tes mencakup struktur API AJAX, pencarian, status star per pengguna, hak akses endpoint tambah, validasi form, sanitasi HTML, metode HTTP, dan perlindungan CSRF.
 
+## AJAX pada Experience — Tugas 5
+
+Halaman `/experience/` sekarang hanya mengirim kerangka awal. Data diambil dari `/api/experience/`, dikelompokkan berdasarkan kategori, lalu dirender melalui JavaScript. Pencarian judul memakai debounce 300 milidetik, sedangkan pilihan status langsung memperbarui hasil. Halaman menyediakan kondisi loading, kosong, error dengan tombol coba lagi, jumlah hasil, serta URL dan tautan JSON yang mengikuti filter aktif.
+
+Superuser dapat menambah pengalaman melalui modal dan endpoint `/experience/add-ajax/`. Pengguna biasa dan Editor menerima JSON 403 jika mencoba memanggil endpoint tersebut secara langsung. Star/unstar juga memakai Fetch API bagi pengguna yang sudah login, sementara pengunjung tetap diarahkan ke login melalui fallback form. Editor tetap hanya dapat mengedit, dan tombol hapus hanya tersedia untuk superuser.
+
+`static/js/ajax-utils.js` menyediakan escaping HTML, pembacaan cookie CSRF, dan pengolahan pesan error yang dipakai bersama oleh halaman Projects dan Experience. `ExperienceForm` membersihkan tag HTML pada input teks dan menolak alamat thumbnail di luar HTTP(S) atau `/static/`. Test otomatis mencakup filter API, informasi star per pengguna, role, status respons 201/400/403, CSRF, sanitasi XSS, modal, dan kerangka AJAX.
+
 ## Pertanyaan Reflektif
 
 ### Tugas 1
@@ -199,8 +211,16 @@ Tes mencakup struktur API AJAX, pencarian, status star per pengguna, hak akses e
 
 3. Request `/api/experience/` dicocokkan oleh URL router ke `get_experience_json`. View mengambil QuerySet `Experience`, menerapkan pencarian/filter, lalu memanggil `serializers.serialize('json', experiences)`. Hasil berupa teks JSON dikembalikan sebagai `HttpResponse` dengan `Content-Type: application/json`. Objek model dan QuerySet tidak dapat dikirim langsung sebagai JSON karena merupakan objek Python dengan tipe seperti UUID dan datetime; serialization mengubahnya menjadi representasi yang dapat dipertukarkan, termasuk `model`, `pk`, dan `fields`. Untuk halaman `/experience/`, `show_experience` mengambil respons JSON dari fungsi tersebut, memanggil `serializers.deserialize`, mengambil `.object` setiap hasil, dan mengirim daftar objek ke template. Pemanggilan ini berlangsung di server tanpa HTTP tambahan. Deserialisasi tidak menyimpan ulang objek ke database; tujuannya memulihkan struktur data agar field dan properti seperti `is_ongoing` bisa dipakai saat rendering.
 
+### Tugas 5
+
+1. Debouncing adalah teknik menunda pemanggilan fungsi sampai tidak ada input baru selama jeda tertentu. Pada pencarian Experience, timer 300 milidetik selalu diulang ketika pengguna mengetik karakter berikutnya. Akibatnya, kata yang terdiri dari beberapa karakter tidak langsung menghasilkan request sebanyak jumlah karakternya. Ini mengurangi request yang tidak perlu, beban server, dan risiko hasil request lama menimpa hasil pencarian terbaru. Selain debounce, saya memakai `AbortController` untuk membatalkan request sebelumnya yang masih berjalan.
+
+2. `await` menunggu Promise dari `fetch()` selesai dan menghasilkan objek `Response` sebelum kode melanjutkan ke pemeriksaan `response.ok` atau membaca JSON. `await response.json()` kemudian menunggu body respons selesai diproses. Tanpa `await`, variabel yang diterima masih berupa Promise, sehingga properti seperti `ok` belum tersedia dan data JSON belum dapat digunakan untuk merender kartu. Program tetap bisa dibuat tanpa `await`, tetapi alurnya harus ditangani dengan rangkaian `.then()` dan `.catch()`.
+
+3. XSS adalah serangan ketika input berbahaya ikut dirender sebagai HTML atau JavaScript dan akhirnya dijalankan di browser pengguna lain. Nilai yang ditampilkan langsung melalui `{{ variabel }}` pada template Django otomatis di-escape. Ketika data AJAX dirangkai dengan template literal lalu dipasang melalui `innerHTML`, perlindungan tersebut tidak ikut bekerja karena prosesnya terjadi di browser. Karena itu, setiap nilai dari JSON pada halaman Experience diproses dengan `escapeHtml()` sebelum dimasukkan ke HTML. Input baru juga dibersihkan dengan `strip_tags` di `ExperienceForm`, tetapi escaping saat output tetap menjadi perlindungan utama untuk data lama atau data yang berasal dari jalur lain.
+
 ## AI Disclosure
 
-Saya menggunakan **GPT** untuk memberi ide pendekatan dan referensi implementasi, memeriksa checklist, serta membantu debugging pada alur permission, role Editor, fitur star, migrasi, dan tes otomatis. Pada Tutorial 5, GPT juga membantu menyesuaikan contoh AJAX dengan field `problem` dan `solution`, meninjau perlindungan CSRF/XSS, serta memeriksa test endpoint. Pada tahap sebelumnya, saya juga menggunakan **Claude** untuk saran pendekatan dan debugging CSS serta model.
+Saya menggunakan **ChatGPT** sebagai referensi implementasi dan untuk membantu debugging pada alur AJAX, permission, CSRF/XSS, serta test otomatis. Pada tahap sebelumnya, saya juga menggunakan **Claude** untuk referensi dan debugging CSS serta model.
 
 Saya tetap menentukan bagian portfolio yang dikembangkan, pembagian hak akses, desain antarmuka, isi konten, dan keputusan akhir implementasi. Seluruh perubahan saya tinjau dan sesuaikan dengan struktur project sebelum diuji dan di-commit.

@@ -1,24 +1,47 @@
 {% extends "base.html" %}
+{% load static %}
 {% block meta %}
   <title>Experience - {{ name }}</title>
 {% endblock meta %}
 {% block content %}
   <main>
-    <section class="experience-section" id="experience">
+    <section class="experience-section"
+             id="experience-app"
+             data-list-endpoint="{% url 'main:get_experience_json' %}"
+             data-create-endpoint="{% url 'main:create_experience_ajax' %}"
+             data-star-url-template="{% url 'main:toggle_experience_star' '00000000-0000-0000-0000-000000000000' %}"
+             data-update-url-template="{% url 'main:update_experience' '00000000-0000-0000-0000-000000000000' %}"
+             data-delete-url-template="{% url 'main:delete_experience' '00000000-0000-0000-0000-000000000000' %}"
+             data-is-authenticated="{{ user.is_authenticated|yesno:'true,false' }}"
+             data-is-superuser="{{ user.is_superuser|yesno:'true,false' }}"
+             data-is-editor="{{ is_editor|yesno:'true,false' }}"
+             data-csrf-token="{{ csrf_token }}">
       <div class="container">
         <p class="section-kicker">Perjalanan saya sejauh ini</p>
-        <h1>Experience</h1>
-
-        <div class="project-actions">
-          {% if user.is_superuser %}
-            <a class="button" href="{% url 'main:create_experience' %}">Tambah pengalaman</a>
-          {% endif %}
-          <a href="{% url 'main:get_experience_json' %}?{{ request.GET.urlencode }}">Lihat JSON</a>
+        <div class="experience-header">
+          <h1>Experience</h1>
+          <div class="project-actions">
+            {% if user.is_superuser %}
+              <button type="button"
+                      class="button project-add-button"
+                      popovertarget="add-experience-modal">
+                <span aria-hidden="true">+</span>
+                Tambah Pengalaman
+              </button>
+            {% endif %}
+            <a id="experience-json-link"
+               href="{% url 'main:get_experience_json' %}">Lihat JSON</a>
+          </div>
         </div>
-        <form method="get" class="experience-filters">
+
+        <form id="experience-filter-form" class="experience-filters">
           <div class="form-group">
             <label for="experience-title">Cari pengalaman</label>
-            <input id="experience-title" type="search" name="title" value="{{ title_query }}" placeholder="Nama pengalaman">
+            <input id="experience-title"
+                   type="search"
+                   name="title"
+                   value="{{ title_query }}"
+                   placeholder="Nama pengalaman">
           </div>
           <div class="form-group">
             <label for="experience-status">Status</label>
@@ -29,59 +52,27 @@
             </select>
           </div>
           <button class="button" type="submit">Terapkan</button>
-          <a href="{% url 'main:show_experience' %}">Reset</a>
+          <button id="experience-reset" class="button button-secondary" type="button">Reset</button>
         </form>
-        <p>{{ experience_list|length }} pengalaman ditampilkan.</p>
 
-        {% regroup experience_list by get_category_display as experience_groups %}
-        {% for group in experience_groups %}
-          <div class="experience-group">
-            <h2 class="experience-group-title">{{ group.grouper }}</h2>
-            <div class="experience-grid">
-              {% for experience in group.list %}
-                <article class="experience-card">
-                  {% if experience.thumbnail %}
-                    <div class="experience-thumbnail-frame">
-                      <img
-                        class="experience-thumbnail{% if experience.title == 'Self-Started Floral Business' or experience.title == 'Academic & Teaching Staff – BETIS Fasilkom UI' %} experience-thumbnail--portrait{% endif %}"
-                        src="{{ experience.thumbnail }}"
-                        alt="Thumbnail {{ experience.title }}"
-                      >
-                    </div>
-                  {% endif %}
-                  <div class="experience-card-body">
-                    <h3>{{ experience.title }}</h3>
-                    <p class="experience-description">
-                      {{ experience.description }}
-                    </p>
-
-                    {% if experience.is_ongoing %}
-                      <p class="experience-status experience-status-ongoing">
-                        Sedang berlangsung
-                      </p>
-                    {% else %}
-                      <p class="experience-status">Selesai &middot; {{ experience.ended_at|date:"d M Y" }}</p>
-                    {% endif %}
-                    <div class="project-actions">
-                      {% include "components/experience_star.html" with experience=experience %}
-                      {% if user.is_superuser or is_editor %}
-                        <a class="button" href="{% url 'main:update_experience' experience.id %}" aria-label="Edit {{ experience.title }}">Edit</a>
-                      {% endif %}
-                      {% if user.is_superuser %}
-                        <a class="button button-danger" href="{% url 'main:delete_experience' experience.id %}" aria-label="Hapus {{ experience.title }}">Hapus</a>
-                      {% endif %}
-                    </div>
-                  </div>
-                </article>
-              {% endfor %}
-            </div>
-          </div>
-        {% empty %}
-          <p class="empty-state">
-            {% if title_query or status_query %}Tidak ada pengalaman yang cocok. Coba ubah filter atau tekan Reset.{% else %}Belum ada pengalaman yang ditambahkan.{% endif %}
-          </p>
-        {% endfor %}
+        <p id="experience-result-count" class="experience-result-count" aria-live="polite"></p>
+        <div id="experience-loading" class="empty-state hide" aria-live="polite">
+          <p>Memuat pengalaman...</p>
+        </div>
+        <div id="experience-error" class="empty-state hide" role="alert">
+          <p>Gagal memuat data pengalaman. Silakan coba lagi.</p>
+          <button id="experience-retry" class="button" type="button">Coba Lagi</button>
+        </div>
+        <div id="experience-empty" class="empty-state hide">
+          <p>Belum ada pengalaman yang sesuai dengan pencarian.</p>
+        </div>
+        <div id="experience-groups" class="hide"></div>
       </div>
     </section>
   </main>
+
+  {% if user.is_superuser %}
+    {% include "components/experience_form_modal.html" %}
+  {% endif %}
+  <script src="{% static 'js/experience.js' %}"></script>
 {% endblock content %}

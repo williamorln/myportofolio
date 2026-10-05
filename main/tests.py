@@ -88,6 +88,12 @@ class ExperienceFlowTest(TestCase):
         token = response.cookies['csrftoken'].value
         response = client.post(reverse('main:create_experience'), {**self.payload, 'csrfmiddlewaretoken': token})
         self.assertEqual(response.status_code, 302)
+        response = client.post(
+            reverse('main:create_experience_ajax'),
+            self.payload,
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(response.status_code, 201)
 
     def test_unknown_ids_and_unsupported_methods(self):
         for action in ('update', 'delete'):
@@ -113,18 +119,27 @@ class ExperienceFlowTest(TestCase):
         }).json(), [])
         self.experience.ended_at = timezone.now()
         self.experience.save()
-        response = self.client.get(reverse('main:show_experience'), {'title': 'Unique', 'status': 'completed'})
-        self.assertContains(response, '1 pengalaman ditampilkan.')
-        self.assertContains(response, 'Selesai')
-        response = self.client.get(reverse('main:show_experience'), {'title': 'not-a-match'})
-        self.assertContains(response, 'Tidak ada pengalaman yang cocok.')
+        response = self.client.get(reverse('main:get_experience_json'), {
+            'title': 'Unique', 'status': 'completed',
+        })
+        self.assertEqual(len(response.json()), 1)
+        self.assertFalse(response.json()[0]['fields']['is_ongoing'])
+        self.assertIsNotNone(response.json()[0]['fields']['ended_at'])
 
     def test_page_escapes_content(self):
         self.experience.title = '<script>alert(1)</script>'
         self.experience.save()
         page = self.client.get(reverse('main:show_experience'))
-        self.assertContains(page, '&lt;script&gt;alert(1)&lt;/script&gt;')
         self.assertNotContains(page, self.experience.title)
+        self.assertContains(page, '/static/js/ajax-utils.js')
+        self.assertContains(page, '/static/js/experience.js')
+        api_item = next(
+            item for item in self.client.get(
+                reverse('main:get_experience_json'),
+            ).json()
+            if item['pk'] == str(self.experience.pk)
+        )
+        self.assertEqual(api_item['fields']['title'], self.experience.title)
 
     def test_experience_form_strips_html(self):
         form = ExperienceForm(data={
@@ -148,6 +163,13 @@ class ExperienceFlowTest(TestCase):
                 })
                 self.assertFalse(form.is_valid())
                 self.assertIn(field, form.errors)
+
+        unsafe_thumbnail = ExperienceForm(data={
+            **self.payload,
+            'thumbnail': 'javascript:alert(1)',
+        })
+        self.assertFalse(unsafe_thumbnail.is_valid())
+        self.assertIn('thumbnail', unsafe_thumbnail.errors)
 
     def test_create_experience_ajax(self):
         before = Experience.objects.count()
@@ -203,13 +225,16 @@ class ExperienceAuthorizationTest(TestCase):
     def test_public_can_read_but_cannot_see_crud_controls(self):
         response = self.client.get(reverse('main:show_experience'))
 
-        self.assertContains(response, self.experience.title)
-        self.assertContains(response, reverse(
-            'main:toggle_experience_star', args=[self.experience.pk],
-        ))
-        self.assertNotContains(response, reverse('main:create_experience'))
-        self.assertNotContains(response, self.url('update'))
-        self.assertNotContains(response, self.url('delete'))
+        self.assertContains(response, 'id="experience-groups"')
+        self.assertContains(response, 'data-is-authenticated="false"')
+        self.assertContains(response, 'data-is-superuser="false"')
+        self.assertContains(response, 'data-is-editor="false"')
+        self.assertNotContains(response, 'id="add-experience-modal"')
+        api_items = self.client.get(reverse('main:get_experience_json')).json()
+        self.assertIn(
+            self.experience.title,
+            [item['fields']['title'] for item in api_items],
+        )
         self.assertEqual(
             self.client.post(reverse('main:create_experience_ajax')).status_code,
             403,
@@ -254,9 +279,14 @@ class ExperienceAuthorizationTest(TestCase):
         self.assertTrue(
             self.experience.starred_by.filter(pk=self.user.pk).exists(),
         )
-        self.assertContains(
-            self.client.get(reverse('main:show_experience')), 'Unstar',
+        item = next(
+            item for item in self.client.get(
+                reverse('main:get_experience_json'),
+            ).json()
+            if item['pk'] == str(self.experience.pk)
         )
+        self.assertTrue(item['fields']['is_starred'])
+        self.assertEqual(item['fields']['star_count'], 1)
         self.client.post(star_url)
         self.assertFalse(
             self.experience.starred_by.filter(pk=self.user.pk).exists(),
@@ -294,17 +324,17 @@ class ExperienceAuthorizationTest(TestCase):
         self.assertEqual(self.experience.title, self.payload['title'])
 
         response = self.client.get(reverse('main:show_experience'))
-        self.assertContains(response, self.url('update'))
-        self.assertNotContains(response, reverse('main:create_experience'))
-        self.assertNotContains(response, self.url('delete'))
+        self.assertContains(response, 'data-is-editor="true"')
+        self.assertContains(response, 'data-is-superuser="false"')
+        self.assertNotContains(response, 'id="add-experience-modal"')
 
     def test_superuser_has_all_experience_controls(self):
         self.client.force_login(self.admin)
         response = self.client.get(reverse('main:show_experience'))
 
-        self.assertContains(response, reverse('main:create_experience'))
-        self.assertContains(response, self.url('update'))
-        self.assertContains(response, self.url('delete'))
+        self.assertContains(response, 'data-is-superuser="true"')
+        self.assertContains(response, 'id="add-experience-modal"')
+        self.assertContains(response, reverse('main:create_experience_ajax'))
 
     def test_experience_api_uses_username_instead_of_internal_id(self):
         self.experience.starred_by.add(self.user)
@@ -359,10 +389,25 @@ class MainTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'experience.html')
-        self.assertContains(response, self.experience.title)
-        self.assertContains(response, self.experience.description)
-        self.assertContains(response, 'Volunteer')
-        self.assertContains(response, 'Sedang berlangsung')
+        self.assertContains(response, 'id="experience-loading"')
+        self.assertContains(response, 'id="experience-error"')
+        self.assertContains(response, 'id="experience-empty"')
+        self.assertContains(response, 'id="experience-groups"')
+        self.assertNotContains(response, self.experience.title)
+        content = response.content.decode()
+        self.assertLess(
+            content.index('/static/js/ajax-utils.js'),
+            content.index('/static/js/experience.js'),
+        )
+        api_item = next(
+            item for item in self.client.get(
+                reverse('main:get_experience_json'),
+            ).json()
+            if item['pk'] == str(self.experience.pk)
+        )
+        self.assertEqual(api_item['fields']['title'], self.experience.title)
+        self.assertEqual(api_item['fields']['category_display'], 'Volunteer')
+        self.assertTrue(api_item['fields']['is_ongoing'])
         self.assertContains(
             response,
             f'href="{reverse("main:show_main")}"',
@@ -370,17 +415,20 @@ class MainTest(TestCase):
 
     def test_empty_experience_page(self):
         Experience.objects.all().delete()
-        response = self.client.get(reverse('main:show_experience'))
-
-        self.assertContains(response, 'Belum ada pengalaman yang ditambahkan.')
+        response = self.client.get(reverse('main:get_experience_json'))
+        self.assertEqual(response.json(), [])
 
     def test_completed_experience(self):
         self.experience.ended_at = timezone.now()
         self.experience.save()
-        response = self.client.get(reverse('main:show_experience'))
+        response = self.client.get(reverse('main:get_experience_json'))
 
         self.assertFalse(self.experience.is_ongoing)
-        self.assertContains(response, 'Selesai')
+        item = next(
+            item for item in response.json()
+            if item['pk'] == str(self.experience.pk)
+        )
+        self.assertFalse(item['fields']['is_ongoing'])
 
 
 class ProjectTest(TestCase):
@@ -412,7 +460,7 @@ class ProjectTest(TestCase):
         self.assertContains(response, 'id="grid"')
         self.assertContains(response, reverse('main:get_projects_json'))
         self.assertContains(response, 'fetchProjects(searchInput.value.trim())')
-        self.assertContains(response, 'function escapeHtml(value)')
+        self.assertContains(response, '/static/js/ajax-utils.js')
         self.assertNotContains(response, self.project.title)
 
     def test_projects_api_returns_data_and_supports_search(self):
