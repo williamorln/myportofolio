@@ -458,7 +458,8 @@ class ProjectTest(TestCase):
         response = self.client.get(reverse('main:show_projects'))
 
         self.assertContains(response, 'id="grid"')
-        self.assertContains(response, reverse('main:get_projects_json'))
+        self.assertContains(response, reverse('api:project-list'))
+        self.assertNotContains(response, reverse('main:get_projects_json'))
         self.assertContains(response, 'fetchProjects(searchInput.value.trim())')
         self.assertContains(response, '/static/js/ajax-utils.js')
         self.assertNotContains(response, self.project.title)
