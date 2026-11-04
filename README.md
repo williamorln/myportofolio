@@ -7,6 +7,7 @@ Proyek ini dikerjakan bertahap mengikuti rangkaian Tutorial dan Tugas Individu t
 ## Tech Stack
 
 - **Backend:** Django 5.2 (Python) dengan pola Model-View-Template
+- **API:** Django REST Framework 3.18
 - **Frontend:** Django Template Language, HTML5, dan CSS3
 - **Database:** SQLite untuk lokal dan PostgreSQL untuk deployment
 - **Static files:** WhiteNoise
@@ -19,9 +20,14 @@ myportofolio/
 ├── env/                  # virtual environment (tidak di-commit)
 ├── main/                 # app profil, experience, dan projects
 │   ├── migrations/
+│   ├── api_urls.py        # routing REST API (/api/v1/)
+│   ├── api_views.py       # API view berbasis DRF
 │   ├── forms.py           # ModelForm untuk Project dan Experience
 │   ├── models.py
+│   ├── permissions.py     # permission class pemilik portofolio
+│   ├── serializers.py     # ProjectSerializer
 │   ├── tests.py
+│   ├── tests_api.py       # test REST API
 │   ├── urls.py
 │   └── views.py
 ├── portofolio/            # package konfigurasi Django
@@ -60,6 +66,7 @@ Proyek ini dibangun bertahap mengikuti rangkaian Tutorial dan Tugas Individu tia
 - **Individual Assignment 4** (27 September 2026) &mdash; Menerapkan empat tingkat akses pada Experience, peran Editor, star Experience, serta perlindungan data pengguna pada API JSON.
 - **Tutorial 5** (30 September 2026) &mdash; Mengubah halaman Projects menjadi interaktif dengan Fetch API, pencarian debounce, modal dan form AJAX, toast, serta perlindungan XSS di browser dan server.
 - **Individual Assignment 5** (5 Oktober 2026) &mdash; Menerapkan pola AJAX secara end-to-end pada Experience, termasuk filter status, pencarian debounce, modal tambah, star tanpa reload, reusable helper, dan perlindungan XSS.
+- **Tutorial 7** (3 November 2026) &mdash; Membangun REST API untuk Projects dengan Django REST Framework (serializer, permission class, API view, session auth + CSRF), lalu memindahkan halaman Projects ke API baru tersebut.
 
 ## Menjalankan Proyek Secara Lokal
 
@@ -184,6 +191,33 @@ Halaman `/experience/` sekarang hanya mengirim kerangka awal. Data diambil dari 
 Superuser dapat menambah pengalaman melalui modal dan endpoint `/experience/add-ajax/`. Pengguna biasa dan Editor menerima JSON 403 jika mencoba memanggil endpoint tersebut secara langsung. Star/unstar juga memakai Fetch API bagi pengguna yang sudah login, sementara pengunjung tetap diarahkan ke login melalui fallback form. Editor tetap hanya dapat mengedit, dan tombol hapus hanya tersedia untuk superuser.
 
 `static/js/ajax-utils.js` menyediakan escaping HTML, pembacaan cookie CSRF, dan pengolahan pesan error yang dipakai bersama oleh halaman Projects dan Experience. `ExperienceForm` membersihkan tag HTML pada input teks dan menolak alamat thumbnail di luar HTTP(S) atau `/static/`. Test otomatis mencakup filter API, informasi star per pengguna, role, status respons 201/400/403, CSRF, sanitasi XSS, modal, dan kerangka AJAX.
+
+## Django REST Framework — Tutorial 7
+
+Data Projects sekarang juga tersedia lewat REST API di bawah `/api/v1/`. Model dan database tidak berubah; yang ditambahkan adalah serializer (`main/serializers.py`), permission class (`main/permissions.py`), API view (`main/api_views.py`), dan routing (`main/api_urls.py`, namespace `api`). Endpoint lama (`/api/projects/`, `/projects/add-ajax/`, dst.) tidak dihapus.
+
+| Method | Endpoint | Tindakan | Akses |
+| --- | --- | --- | --- |
+| GET | `/api/v1/projects/` | Daftar proyek, `?title=` untuk mencari | Semua pengunjung |
+| POST | `/api/v1/projects/` | Tambah proyek | Pemilik (`is_superuser`) |
+| GET | `/api/v1/projects/<uuid>/` | Detail proyek | Semua pengunjung |
+| PUT / PATCH | `/api/v1/projects/<uuid>/` | Ubah proyek | Pemilik |
+| DELETE | `/api/v1/projects/<uuid>/` | Hapus proyek (204) | Pemilik |
+| POST | `/api/v1/projects/<uuid>/star/` | Beri atau batalkan star | Pengguna login |
+
+Autentikasi memakai `SessionAuthentication`, sehingga login yang sudah ada dipakai ulang dan request tulis wajib membawa token CSRF. `IsPortfolioOwnerOrReadOnly` memeriksa `is_superuser` (bukan `is_staff`), jadi pengguna biasa dan pengunjung mendapat 403 untuk POST/PUT/PATCH/DELETE, dan pemeriksaan ini terjadi sebelum objek dicari. `ProjectSerializer` membersihkan tag HTML, menolak judul yang kosong setelah dibersihkan, memvalidasi URL, dan hanya mengirim field yang dideklarasikan (tanpa email atau data akun lain).
+
+Script di `templates/projects.html` diganti agar membaca `id`, `title`, `problem`, dan seterusnya langsung dari objek JSON (bukan `item.fields`). Tambah, hapus, dan star dikirim sebagai JSON lewat satu fungsi `writeProject`, lalu daftar diambil ulang. Pesan error DRF (`{"title": ["..."]}`) ditampilkan lewat toast. Tag `{% csrf_token %}` ditaruh di luar script agar cookie `csrftoken` tetap dibuat untuk pengguna biasa yang memberi star.
+
+Verifikasi Tutorial 7:
+
+```sh
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test
+```
+
+`main/tests_api.py` menguji daftar/detail publik, pencarian dan hasil kosong, 404, 403 untuk pengunjung dan pengguna biasa, 403 yang muncul sebelum 404, validasi (judul spasi, judul hanya tag, URL `javascript:`), PUT vs PATCH, DELETE 204, toggle star, metode yang tidak diizinkan (405), JSON rusak (400), dan penegakan CSRF pada request berbasis session.
 
 ## Pertanyaan Reflektif
 
