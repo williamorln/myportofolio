@@ -334,7 +334,8 @@ class ExperienceAuthorizationTest(TestCase):
 
         self.assertContains(response, 'data-is-superuser="true"')
         self.assertContains(response, 'id="add-experience-modal"')
-        self.assertContains(response, reverse('main:create_experience_ajax'))
+        self.assertContains(response, f'data-create-endpoint="{reverse("api:experience-list")}"')
+        self.assertNotContains(response, reverse('main:create_experience_ajax'))
 
     def test_experience_api_uses_username_instead_of_internal_id(self):
         self.experience.starred_by.add(self.user)

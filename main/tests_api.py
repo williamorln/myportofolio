@@ -495,6 +495,13 @@ class ExperienceAPITest(APITestCase):
         self.client.force_login(self.visitor)
         self.assertEqual(self.client.get(edit_url).status_code, 403)
 
+    def test_experience_page_uses_api_endpoints(self):
+        response = self.client.get(reverse("main:show_experience"))
+        self.assertContains(response, f'data-list-endpoint="{self.list_url}"')
+        self.assertContains(response, "data-detail-url-template")
+        self.assertNotContains(response, reverse("main:get_experience_json"))
+        self.assertContains(response, "/static/js/ajax-utils.js")
+
     def test_legacy_endpoints_still_available(self):
         self.assertEqual(self.client.get(reverse("main:get_experience_json")).status_code, 200)
         self.assertEqual(self.client.get(reverse("main:show_experience")).status_code, 200)

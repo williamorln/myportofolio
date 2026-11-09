@@ -24,3 +24,28 @@ function getFormErrorMessages(result, fallbackMessage) {
     .flat()
     .map((error) => error.message);
 }
+
+// error validasi DRF berbentuk {"title": ["..."]}, error umum {"detail": "..."}
+function apiErrorMessage(data, status) {
+  const messages = Object.values(data)
+    .flat()
+    .filter((value) => typeof value === "string");
+  return messages.join(" ") || `Permintaan gagal (HTTP ${status}).`;
+}
+
+async function sendJson(url, method, payload) {
+  const response = await fetch(url, {
+    method,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCookie("csrftoken"),
+    },
+    body: payload === undefined ? undefined : JSON.stringify(payload),
+  });
+  if (response.status === 204) return null;
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(apiErrorMessage(data, response.status));
+  return data;
+}

@@ -6,7 +6,6 @@ if (experienceApp) {
   const isAuthenticated = experienceApp.dataset.isAuthenticated === "true";
   const isSuperuser = experienceApp.dataset.isSuperuser === "true";
   const isEditor = experienceApp.dataset.isEditor === "true";
-  const csrfToken = experienceApp.dataset.csrfToken;
 
   const filterForm = document.getElementById("experience-filter-form");
   const searchInput = document.getElementById("experience-title");
@@ -54,9 +53,8 @@ if (experienceApp) {
     groupsContainer.classList.toggle("hide", !showGroups);
   }
 
-  function buildExperienceCard(item) {
-    const experience = item.fields;
-    const experienceId = item.pk;
+  function buildExperienceCard(experience) {
+    const experienceId = experience.id;
     const thumbnailUrl = safeImageUrl(experience.thumbnail);
     const portraitClass = [
       "Self-Started Floral Business",
@@ -73,24 +71,22 @@ if (experienceApp) {
       ? '<p class="experience-status experience-status-ongoing">Sedang berlangsung</p>'
       : `<p class="experience-status">Selesai &middot; ${escapeHtml(formatDate(experience.ended_at))}</p>`;
 
-    const starUrl = buildItemUrl(
-      experienceApp.dataset.starUrlTemplate,
-      experienceId,
-    );
     const starTitle = experience.star_count > 0
       ? `Dibintangi oleh ${experience.starred_by_names}`
       : "Jadilah yang pertama memberi star";
-    const starHtml = `
-      <form method="post" action="${escapeHtml(starUrl)}" class="star-form experience-star-form">
-        <input type="hidden" name="csrfmiddlewaretoken" value="${escapeHtml(csrfToken)}">
-        <button type="submit"
-                class="button button-star${experience.is_starred ? " is-starred" : ""}"
-                title="${escapeHtml(starTitle)}">
-          <span aria-hidden="true">★</span>
-          ${experience.is_starred ? "Unstar" : "Star"}
-          <span class="star-count">${experience.star_count}</span>
-        </button>
-      </form>`;
+    const starContent = `
+      <span aria-hidden="true">★</span>
+      ${experience.is_starred ? "Unstar" : "Star"}
+      <span class="star-count">${experience.star_count}</span>`;
+    const starHtml = isAuthenticated
+      ? `<button type="button"
+                 class="button button-star${experience.is_starred ? " is-starred" : ""}"
+                 data-action="star"
+                 data-id="${escapeHtml(experienceId)}"
+                 title="${escapeHtml(starTitle)}">${starContent}</button>`
+      : `<a href="${escapeHtml(experienceApp.dataset.loginUrl)}"
+            class="button button-star"
+            title="Login dulu untuk memberi star">${starContent}</a>`;
 
     let managementHtml = "";
     if (isSuperuser || isEditor) {
@@ -104,14 +100,12 @@ if (experienceApp) {
            aria-label="Edit ${escapeHtml(experience.title)}">Edit</a>`;
     }
     if (isSuperuser) {
-      const deleteUrl = buildItemUrl(
-        experienceApp.dataset.deleteUrlTemplate,
-        experienceId,
-      );
       managementHtml += `
-        <a class="button button-danger"
-           href="${escapeHtml(deleteUrl)}"
-           aria-label="Hapus ${escapeHtml(experience.title)}">Hapus</a>`;
+        <button type="button"
+                class="button button-danger"
+                data-action="delete"
+                data-id="${escapeHtml(experienceId)}"
+                aria-label="Hapus ${escapeHtml(experience.title)}">Hapus</button>`;
     }
 
     return `
@@ -132,7 +126,7 @@ if (experienceApp) {
   function renderExperiences(items) {
     const groupedItems = new Map();
     items.forEach((item) => {
-      const category = item.fields.category_display;
+      const category = item.category_display;
       if (!groupedItems.has(category)) groupedItems.set(category, []);
       groupedItems.get(category).push(item);
     });
@@ -167,7 +161,9 @@ if (experienceApp) {
 
   function syncLinksAndLocation(queryString) {
     const suffix = queryString ? `?${queryString}` : "";
-    jsonLink.href = `${experienceApp.dataset.listEndpoint}${suffix}`;
+    const jsonParams = new URLSearchParams(queryString);
+    jsonParams.set("format", "json");
+    jsonLink.href = `${experienceApp.dataset.listEndpoint}?${jsonParams}`;
     window.history.replaceState({}, "", `${window.location.pathname}${suffix}`);
   }
 
@@ -228,32 +224,33 @@ if (experienceApp) {
   });
   retryButton.addEventListener("click", fetchExperiences);
 
-  groupsContainer.addEventListener("submit", async (event) => {
-    const starForm = event.target.closest(".experience-star-form");
-    if (!starForm || !isAuthenticated) return;
-    event.preventDefault();
+  groupsContainer.addEventListener("click", async (event) => {
+    const button = event.target.closest("button[data-action]");
+    if (!button || button.disabled) return;
 
-    const button = starForm.querySelector('button[type="submit"]');
+    const action = button.dataset.action;
+    if (action === "delete" && !window.confirm("Yakin ingin menghapus pengalaman ini?")) {
+      return;
+    }
+
     button.disabled = true;
     try {
-      const response = await fetch(starForm.action, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        body: new FormData(starForm),
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      await response.json();
+      if (action === "star") {
+        await sendJson(
+          buildItemUrl(experienceApp.dataset.starUrlTemplate, button.dataset.id),
+          "POST",
+        );
+      } else {
+        await sendJson(
+          buildItemUrl(experienceApp.dataset.detailUrlTemplate, button.dataset.id),
+          "DELETE",
+        );
+        showToast("Berhasil", "Pengalaman berhasil dihapus.", "success");
+      }
       await fetchExperiences();
     } catch (error) {
-      console.error("Error updating star:", error);
-      showToast(
-        "Gagal memperbarui star",
-        "Tidak dapat menyimpan perubahan. Silakan coba lagi.",
-        "error",
-      );
+      console.error("Error updating experience:", error);
+      showToast("Permintaan gagal", error.message, "error");
       button.disabled = false;
     }
   });
@@ -269,40 +266,22 @@ if (experienceApp) {
     submitButton.disabled = true;
 
     try {
-      const response = await fetch(experienceApp.dataset.createEndpoint, {
-        method: "POST",
-        headers: { "X-CSRFToken": getCookie("csrftoken") },
-        body: new FormData(experienceForm),
-      });
-      const result = await response.json().catch(() => ({}));
+      const fields = new FormData(experienceForm);
+      const payload = Object.fromEntries(
+        ["title", "description", "category", "thumbnail", "ended_at"]
+          .map((name) => [name, fields.get(name)]),
+      );
+      // input tanggal kosong harus dikirim sebagai null, bukan string kosong
+      payload.ended_at = payload.ended_at || null;
 
-      if (response.ok) {
-        experienceForm.reset();
-        closeExperienceModal();
-        showToast(
-          "Berhasil",
-          "Pengalaman baru berhasil ditambahkan!",
-          "success",
-        );
-        await fetchExperiences();
-      } else {
-        const errorMessages = getFormErrorMessages(
-          result,
-          `Terjadi kesalahan (status ${response.status}).`,
-        );
-        showToast(
-          "Gagal menambahkan pengalaman",
-          errorMessages.join(" "),
-          "error",
-        );
-      }
+      await sendJson(experienceApp.dataset.createEndpoint, "POST", payload);
+      experienceForm.reset();
+      closeExperienceModal();
+      showToast("Berhasil", "Pengalaman baru berhasil ditambahkan!", "success");
+      await fetchExperiences();
     } catch (error) {
       console.error("Error adding experience:", error);
-      showToast(
-        "Gagal menambahkan pengalaman",
-        "Tidak dapat terhubung ke server. Silakan coba lagi.",
-        "error",
-      );
+      showToast("Gagal menambahkan pengalaman", error.message, "error");
     } finally {
       submitButton.disabled = false;
     }

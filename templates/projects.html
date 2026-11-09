@@ -174,29 +174,6 @@
       fetchProjects(searchInput.value.trim());
     }
 
-    // error validasi DRF berbentuk {"title": ["..."]}, error umum {"detail": "..."}
-    function apiErrorMessage(data, status) {
-      const messages = Object.values(data).flat().filter((value) => typeof value === "string");
-      return messages.join(" ") || `Permintaan gagal (HTTP ${status}).`;
-    }
-
-    async function writeProject(url, method, payload) {
-      const response = await fetch(url, {
-        method,
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        body: payload === undefined ? undefined : JSON.stringify(payload),
-      });
-      if (response.status === 204) return null;
-
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(apiErrorMessage(data, response.status));
-      return data;
-    }
-
     function closeProjectModal() {
       const modal = document.getElementById("add-project-modal");
       if (modal && modal.matches(":popover-open")) modal.hidePopover();
@@ -213,7 +190,7 @@
           ["title", "problem", "solution", "tech_stack", "project_url"]
             .map((name) => [name, fields.get(name)]),
         );
-        await writeProject(BASE_PROJECTS_ENDPOINT, "POST", payload);
+        await sendJson(BASE_PROJECTS_ENDPOINT, "POST", payload);
         projectForm.reset();
         closeProjectModal();
         showToast("Berhasil", "Proyek baru berhasil ditambahkan!", "success");
@@ -238,7 +215,7 @@
       button.disabled = true;
       try {
         const pattern = action === "star" ? STAR_PROJECT_ENDPOINT : DETAIL_PROJECT_ENDPOINT;
-        await writeProject(
+        await sendJson(
           projectEndpoint(pattern, button.dataset.id),
           action === "star" ? "POST" : "DELETE",
         );
