@@ -99,6 +99,8 @@ def show_experience(request):
         'status_query': request.GET.get('status', ''),
         'is_editor': _is_editor(request.user),
         'form': ExperienceForm(),
+        # id berbeda supaya tidak bentrok dengan form tambah di halaman yang sama
+        'edit_form': ExperienceForm(auto_id='edit_%s'),
         'active_page': 'experience',
     }
     return render(request, 'experience.html', context)

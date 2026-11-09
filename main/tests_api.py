@@ -472,6 +472,26 @@ class ExperienceAPITest(APITestCase):
         self.assertEqual(self.client.delete(self.list_url).status_code, 405)
         self.assertEqual(self.client.post(self.detail_url, self.payload, format="json").status_code, 405)
 
+    def test_edit_modal_only_for_owner_and_editor(self):
+        page_url = reverse("main:show_experience")
+        self.assertNotContains(self.client.get(page_url), 'id="edit-experience-modal"')
+        self.client.force_login(self.visitor)
+        self.assertNotContains(self.client.get(page_url), 'id="edit-experience-modal"')
+
+        self.client.force_login(self.editor)
+        response = self.client.get(page_url)
+        self.assertContains(response, 'id="edit-experience-modal"')
+        self.assertContains(response, 'id="edit_title"')
+        self.assertNotContains(response, 'id="add-experience-modal"')
+
+        self.client.force_login(self.owner)
+        response = self.client.get(page_url)
+        self.assertContains(response, 'id="edit-experience-modal"')
+        self.assertContains(response, 'id="add-experience-modal"')
+        # form tambah dan form edit tidak boleh memakai id input yang sama
+        self.assertContains(response, 'id="id_title"')
+        self.assertContains(response, 'id="edit_title"')
+
     def test_browsable_api_opens(self):
         for url in (self.list_url, self.detail_url):
             response = self.client.get(url, HTTP_ACCEPT="text/html")

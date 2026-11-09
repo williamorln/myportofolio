@@ -24,8 +24,8 @@ myportofolio/
 │   ├── api_views.py       # API view berbasis DRF
 │   ├── forms.py           # ModelForm untuk Project dan Experience
 │   ├── models.py
-│   ├── permissions.py     # permission class pemilik portofolio
-│   ├── serializers.py     # ProjectSerializer
+│   ├── permissions.py     # permission class pemilik dan Editor
+│   ├── serializers.py     # ProjectSerializer dan ExperienceSerializer
 │   ├── tests.py
 │   ├── tests_api.py       # test REST API
 │   ├── urls.py
@@ -39,6 +39,7 @@ myportofolio/
 │   ├── experience_form.html
 │   ├── experience_confirm_delete.html
 │   ├── experience.html    # daftar experience dari database
+│   ├── components/        # modal tambah dan edit, star, toast
 │   ├── projects.html      # daftar project dari database
 │   └── index.html         # halaman utama portofolio
 ├── static/
@@ -67,6 +68,7 @@ Proyek ini dibangun bertahap mengikuti rangkaian Tutorial dan Tugas Individu tia
 - **Tutorial 5** (30 September 2026) &mdash; Mengubah halaman Projects menjadi interaktif dengan Fetch API, pencarian debounce, modal dan form AJAX, toast, serta perlindungan XSS di browser dan server.
 - **Individual Assignment 5** (5 Oktober 2026) &mdash; Menerapkan pola AJAX secara end-to-end pada Experience, termasuk filter status, pencarian debounce, modal tambah, star tanpa reload, reusable helper, dan perlindungan XSS.
 - **Tutorial 7** (3 November 2026) &mdash; Membangun REST API untuk Projects dengan Django REST Framework (serializer, permission class, API view, session auth + CSRF), lalu memindahkan halaman Projects ke API baru tersebut.
+- **Individual Assignment 6** (November 2026) &mdash; Menerapkan REST API dengan DRF pada Experience, lengkap dengan peran Editor (hanya boleh mengubah), pemilik (akses penuh), dan star untuk pengguna login, lalu memindahkan halaman Experience ke API tersebut, termasuk edit lewat modal dengan `PATCH`.
 
 ## Menjalankan Proyek Secara Lokal
 
@@ -207,7 +209,7 @@ Data Projects sekarang juga tersedia lewat REST API di bawah `/api/v1/`. Model d
 
 Autentikasi memakai `SessionAuthentication`, sehingga login yang sudah ada dipakai ulang dan request tulis wajib membawa token CSRF. `IsPortfolioOwnerOrReadOnly` memeriksa `is_superuser` (bukan `is_staff`), jadi pengguna biasa dan pengunjung mendapat 403 untuk POST/PUT/PATCH/DELETE, dan pemeriksaan ini terjadi sebelum objek dicari. `ProjectSerializer` membersihkan tag HTML, menolak judul yang kosong setelah dibersihkan, memvalidasi URL, dan hanya mengirim field yang dideklarasikan (tanpa email atau data akun lain).
 
-Script di `templates/projects.html` diganti agar membaca `id`, `title`, `problem`, dan seterusnya langsung dari objek JSON (bukan `item.fields`). Tambah, hapus, dan star dikirim sebagai JSON lewat satu fungsi `writeProject`, lalu daftar diambil ulang. Pesan error DRF (`{"title": ["..."]}`) ditampilkan lewat toast. Tag `{% csrf_token %}` ditaruh di luar script agar cookie `csrftoken` tetap dibuat untuk pengguna biasa yang memberi star.
+Script di `templates/projects.html` diganti agar membaca `id`, `title`, `problem`, dan seterusnya langsung dari objek JSON (bukan `item.fields`). Tambah, hapus, dan star dikirim sebagai JSON lewat helper bersama `sendJson` di `static/js/ajax-utils.js`, lalu daftar diambil ulang. Pesan error DRF (`{"title": ["..."]}`) ditampilkan lewat toast. Tag `{% csrf_token %}` ditaruh di luar script agar cookie `csrftoken` tetap dibuat untuk pengguna biasa yang memberi star.
 
 Verifikasi Tutorial 7:
 
@@ -218,6 +220,46 @@ python manage.py test
 ```
 
 `main/tests_api.py` menguji daftar/detail publik, pencarian dan hasil kosong, 404, 403 untuk pengunjung dan pengguna biasa, 403 yang muncul sebelum 404, validasi (judul spasi, judul hanya tag, URL `javascript:`), PUT vs PATCH, DELETE 204, toggle star, metode yang tidak diizinkan (405), JSON rusak (400), dan penegakan CSRF pada request berbasis session.
+
+## REST API pada Experience — Tugas 6
+
+Pola DRF dari Tutorial 7 diterapkan juga pada **Experience** di `/api/v1/experience/`. `ExperienceSerializer` dan `ProjectSerializer` berbagi kelas dasar `StarredSerializer` untuk field `star_count`, `is_starred`, dan `starred_by_names`. Logika detail (GET/PUT/PATCH/DELETE) dan toggle star juga dipakai bersama oleh kedua resource lewat fungsi pembantu di `main/api_views.py`.
+
+| Method | Endpoint | Tindakan | Pengunjung | Pengguna biasa | Editor | Pemilik |
+| --- | --- | --- | :-: | :-: | :-: | :-: |
+| GET | `/api/v1/experience/` | Daftar; `?title=` dan `?status=ongoing\|completed` | ✔ | ✔ | ✔ | ✔ |
+| POST | `/api/v1/experience/` | Tambah | ✘ | ✘ | ✘ | ✔ |
+| GET | `/api/v1/experience/<uuid>/` | Detail | ✔ | ✔ | ✔ | ✔ |
+| PUT / PATCH | `/api/v1/experience/<uuid>/` | Ubah | ✘ | ✘ | ✔ | ✔ |
+| DELETE | `/api/v1/experience/<uuid>/` | Hapus | ✘ | ✘ | ✘ | ✔ |
+| POST | `/api/v1/experience/<uuid>/star/` | Beri/batalkan star | ✘ (403) | ✔ | ✔ | ✔ |
+
+Aturan peran dari Tugas 4 dipertahankan oleh `IsPortfolioOwnerOrEditorOrReadOnly` di `main/permissions.py`: pemilik (`is_superuser`) mengelola semuanya, sedangkan Editor, yaitu anggota grup `Editor`, hanya boleh PUT/PATCH. Status `is_staff` tidak memberi akses apa pun. Fungsi `is_editor` kini menjadi satu-satunya definisi peran, dipakai oleh API maupun view lama. Seperti pada Projects, permission diperiksa sebelum objek dicari, sehingga pengguna tanpa hak akses mendapat 403, bukan 404.
+
+`ExperienceSerializer` memakai aturan validasi yang sama dengan `ExperienceForm`: tag HTML dibuang dari judul dan deskripsi (yang kosong setelah dibersihkan ditolak), kategori divalidasi dari pilihan model, dan thumbnail hanya boleh HTTP(S) atau `/static/`. Field `id`, `started_at`, `is_ongoing`, dan field star bersifat read-only, jadi tidak bisa dipalsukan lewat request.
+
+Halaman `/experience/` sekarang membaca bentuk JSON datar dari API (`experience.id`, `experience.title`, dan seterusnya, bukan `item.fields`). Tambah lewat modal dikirim sebagai JSON (tanggal selesai kosong dikirim sebagai `null`), star memakai tombol dengan `POST`, dan hapus memakai tombol `DELETE` dengan konfirmasi dan toast tanpa pindah halaman. Tombol Edit (untuk Editor dan pemilik) membuka modal yang sudah terisi data kartu, lalu menyimpan lewat `PATCH` yang hanya mengirim field yang berubah. Kalau tidak ada yang berubah, tidak ada request yang dikirim. Tombol "Tandai selesai" pada pengalaman yang masih berlangsung juga memakai `PATCH` satu field (`ended_at`), dan mengosongkan tanggal selesai di modal mengembalikannya ke status berlangsung. Pesan error API, baik validasi 400 maupun penolakan 403, ditampilkan lewat toast. Halaman edit lama dari Tugas 3 masih ada di URL-nya, tetapi tidak lagi ditautkan dari halaman Experience. Helper `sendJson` dan `apiErrorMessage` dipindahkan ke `static/js/ajax-utils.js` agar halaman Projects dan Experience memakai kode yang sama. Endpoint JSON lama tetap tersedia.
+
+Mencoba API: jalankan `python manage.py runserver`, login sebagai pemilik atau Editor, lalu buka `/api/v1/experience/` untuk Browsable API (tambahkan `?format=json` untuk JSON mentah). Request yang mengubah data dari Console browser harus membawa header `X-CSRFToken` yang dibaca dari cookie `csrftoken`, misalnya:
+
+```js
+const token = document.cookie.split('; ').find(c => c.startsWith('csrftoken='))?.split('=')[1];
+await fetch('/api/v1/experience/<uuid>/', {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
+  body: JSON.stringify({ title: 'Judul baru' }),
+});
+```
+
+Verifikasi Tugas 6:
+
+```sh
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test main
+```
+
+`ProjectAPITest` dan `ExperienceAPITest` di `main/tests_api.py` menguji akses untuk pengunjung, pengguna biasa, Editor, dan pemilik; filter dan hasil kosong; validasi (judul spasi, judul hanya tag, kategori tidak dikenal, thumbnail `javascript:`, tanggal rusak); PUT vs PATCH; DELETE 204; field yang tidak boleh dipalsukan; toggle star; metode yang tidak diizinkan; penegakan CSRF pada request berbasis session; modal edit yang hanya muncul untuk pemilik dan Editor; Browsable API yang dapat dibuka; serta view lama yang dipastikan tidak memberi hak lebih luas daripada API. Pada tes penolakan, isi database ikut diperiksa, bukan hanya status HTTP-nya.
 
 ## Pertanyaan Reflektif
 
@@ -253,8 +295,28 @@ python manage.py test
 
 3. XSS adalah serangan ketika input berbahaya ikut dirender sebagai HTML atau JavaScript dan akhirnya dijalankan di browser pengguna lain. Nilai yang ditampilkan langsung melalui `{{ variabel }}` pada template Django otomatis di-escape. Ketika data AJAX dirangkai dengan template literal lalu dipasang melalui `innerHTML`, perlindungan tersebut tidak ikut bekerja karena prosesnya terjadi di browser. Karena itu, setiap nilai dari JSON pada halaman Experience diproses dengan `escapeHtml()` sebelum dimasukkan ke HTML. Input baru juga dibersihkan dengan `strip_tags` di `ExperienceForm`, tetapi escaping saat output tetap menjadi perlindungan utama untuk data lama atau data yang berasal dari jalur lain.
 
+### Tugas 6
+
+1. REST (Representational State Transfer) adalah gaya arsitektur untuk merancang web API, bukan library atau format data. Ada tiga gagasan yang saya pakai di proyek ini. Pertama, data diperlakukan sebagai resource dengan URL sendiri: `/api/v1/experience/` untuk kumpulan pengalaman dan `/api/v1/experience/<uuid>/` untuk satu pengalaman. Kedua, tindakan dinyatakan lewat HTTP method (GET membaca, POST membuat, PUT/PATCH mengubah, DELETE menghapus), bukan lewat kata kerja di URL. Ketiga, klien dan server bertukar representasi data berupa JSON, dan setiap request membawa informasi yang dibutuhkan server (stateless). Pada proyek ini `SessionAuthentication` masih memakai session di server, jadi tidak sepenuhnya stateless, tetapi itu pilihan yang wajar untuk klien AJAX di domain yang sama. Mengembalikan JSON saja belum cukup karena itu baru soal format respons. Endpoint saya di Tugas 5, seperti `/experience/add-ajax/` dan `/experience/<id>/delete/`, juga mengembalikan JSON, tetapi tindakannya ditulis di URL dan semuanya memakai POST, sehingga bentuknya lebih mirip pemanggilan fungsi jarak jauh daripada resource.
+
+   PUT mengganti seluruh representasi sebuah resource, jadi semua field wajib dikirim. Pada API saya, PUT yang hanya berisi `title` ditolak dengan 400 karena `description` ikut wajib. PATCH hanya mengirim field yang ingin diubah dan field lain dibiarkan seperti semula. PATCH lebih tepat ketika klien hanya mengubah sebagian data, misalnya modal edit di halaman Experience yang hanya mengirim field yang berubah, atau tombol "Tandai selesai" yang cuma mengirim `{"ended_at": ...}`. PUT lebih tepat ketika klien memegang representasi lengkap dan ingin menimpanya seluruhnya, misalnya form edit penuh yang selalu mengirim semua field atau sinkronisasi data dari sumber lain.
+
+2. Serializer adalah penerjemah dua arah antara model dan data yang dipertukarkan dengan klien. Saat membaca (serialization), `ExperienceSerializer` mengubah objek `Experience` menjadi data Python yang kemudian dirender DRF menjadi JSON. Saat menulis (deserialization), serializer memeriksa input lewat `is_valid()`, dan hanya data yang lolos yang disimpan lewat `save()`. Di serializer itu juga saya mendefinisikan daftar field yang eksplisit (tanpa email atau data akun lain), field hitungan yang read-only seperti `star_count`, `is_starred`, dan `is_ongoing`, serta validasi `validate_title` dan `validate_thumbnail` yang membersihkan tag HTML.
+
+   Dibandingkan dengan Tutorial 05, keuntungannya cukup jelas. Dulu `get_experience_json` merakit dictionary dalam perulangan, validasi ada di `ExperienceForm`, dan bentuk error diolah manual dari `form.errors.get_json_data()`, sehingga bentuk data dan aturannya tersebar di beberapa tempat. Sekarang satu serializer dipakai untuk daftar, detail, tambah, dan ubah. `ModelSerializer` menyediakan `create()` dan `update()`, jadi PATCH parsial cukup memakai `partial=True`. Format error selalu `{"field": ["pesan"]}` sehingga mudah ditampilkan di toast, dan `read_only_fields` mencegah klien memalsukan `id` atau `started_at`. Logika star juga bisa dipakai ulang oleh `ProjectSerializer` lewat kelas dasar `StarredSerializer`, sedangkan versi manual harus menyalin perulangan yang sama untuk setiap model.
+
+3. Autentikasi menjawab "siapa kamu", sedangkan otorisasi menjawab "apa yang boleh kamu lakukan". Di DRF keduanya dipisah. `SessionAuthentication` membaca cookie session dan mengisi `request.user` (pengunjung yang belum login dianggap anonim), lalu permission class memutuskan apakah request boleh diteruskan. `IsPortfolioOwnerOrEditorOrReadOnly` mengizinkan baca untuk semua, PUT/PATCH untuk pemilik dan Editor, serta POST/DELETE hanya untuk pemilik, sedangkan endpoint star memakai `IsAuthenticated`. Pemisahan ini juga menjelaskan kenapa pengguna biasa yang mencoba mengubah data yang tidak ada mendapat 403, bukan 404: permission diperiksa sebelum objek dicari.
+
+   Hak akses harus diperiksa di server karena menyembunyikan tombol di template hanya mengatur tampilan. Siapa pun bisa mengirim request langsung lewat DevTools, `curl`, atau Browsable API tanpa melewati template sama sekali, dan kode di browser tidak bisa dijadikan batas keamanan. Di test, pengunjung, pengguna biasa, dan Editor yang mengirim `DELETE` langsung ke API ditolak dengan 403, dan barisnya tetap ada di database.
+
+4. `SessionAuthentication` mengandalkan cookie session, dan browser mengirim cookie itu otomatis ke domain kita pada setiap request, termasuk request yang dipicu halaman dari situs lain. Tanpa token CSRF, halaman berbahaya bisa membuat browser pemilik portofolio yang sedang login mengirim `DELETE` atau `PATCH` ke API, dan server mengira itu permintaan sah. Karena itu DRF mewajibkan token CSRF pada request yang mengubah data dari pengguna yang terautentikasi lewat session: nilai header `X-CSRFToken` harus cocok dengan cookie `csrftoken`, dan situs lain tidak dapat membaca cookie itu karena same-origin policy. Jika tokennya tidak ada, hasilnya 403. Itu sebabnya `sendJson` selalu menyertakan `X-CSRFToken`.
+
+   `force_authenticate` tidak cukup sebagai bukti karena ia menempelkan user langsung ke request dan melewati proses autentikasi, sehingga pemeriksaan CSRF yang berada di dalam `SessionAuthentication` tidak pernah dijalankan. Test seperti itu tetap lulus walaupun perlindungan CSRF rusak. Karena itu test CSRF saya memakai `APIClient(enforce_csrf_checks=True)` dengan `.login()` agar session asli dan pemeriksaan CSRF berjalan. Request tanpa token mendapat 403 dan database tidak berubah, sedangkan request dengan token yang diambil dari halaman berhasil.
+
 ## AI Disclosure
 
 Saya menggunakan **ChatGPT** sebagai referensi implementasi dan untuk membantu debugging pada alur AJAX, permission, CSRF/XSS, serta test otomatis. Pada tahap sebelumnya, saya juga menggunakan **Claude** untuk referensi dan debugging CSS serta model.
+
+Untuk Tutorial 7 dan Tugas 6, saya menggunakan **Claude Code** (Anthropic) sebagai AI assistant untuk membantu menyusun implementasi REST API (serializer, permission class, API view), integrasi halaman Projects dan Experience dengan API, test, debugging, serta draf dokumentasi dan jawaban refleksi di README.
 
 Saya tetap menentukan bagian portfolio yang dikembangkan, pembagian hak akses, desain antarmuka, isi konten, dan keputusan akhir implementasi. Seluruh perubahan saya tinjau dan sesuaikan dengan struktur project sebelum diuji dan di-commit.

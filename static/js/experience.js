@@ -19,7 +19,11 @@ if (experienceApp) {
   const emptyState = document.getElementById("experience-empty");
   const groupsContainer = document.getElementById("experience-groups");
   const experienceForm = document.getElementById("experience-form");
+  const experienceEditForm = document.getElementById("experience-edit-form");
+  const EDITABLE_FIELDS = ["title", "description", "category", "thumbnail", "ended_at"];
 
+  // data terakhir dari API, dipakai untuk mengisi modal edit tanpa request tambahan
+  const experienceCache = new Map();
   let searchDebounceTimer;
   let experienceAbortController;
 
@@ -90,14 +94,20 @@ if (experienceApp) {
 
     let managementHtml = "";
     if (isSuperuser || isEditor) {
-      const updateUrl = buildItemUrl(
-        experienceApp.dataset.updateUrlTemplate,
-        experienceId,
-      );
       managementHtml += `
-        <a class="button"
-           href="${escapeHtml(updateUrl)}"
-           aria-label="Edit ${escapeHtml(experience.title)}">Edit</a>`;
+        <button type="button"
+                class="button"
+                data-action="edit"
+                data-id="${escapeHtml(experienceId)}"
+                aria-label="Edit ${escapeHtml(experience.title)}">Edit</button>`;
+      if (experience.is_ongoing) {
+        managementHtml += `
+        <button type="button"
+                class="button button-secondary"
+                data-action="finish"
+                data-id="${escapeHtml(experienceId)}"
+                aria-label="Tandai ${escapeHtml(experience.title)} selesai">Tandai selesai</button>`;
+      }
     }
     if (isSuperuser) {
       managementHtml += `
@@ -183,6 +193,8 @@ if (experienceApp) {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const items = await response.json();
+      experienceCache.clear();
+      items.forEach((item) => experienceCache.set(item.id, item));
       syncLinksAndLocation(queryString);
       resultCount.textContent = `${items.length} pengalaman ditampilkan.`;
       groupsContainer.innerHTML = "";
@@ -229,6 +241,14 @@ if (experienceApp) {
     if (!button || button.disabled) return;
 
     const action = button.dataset.action;
+    const detailUrl = buildItemUrl(
+      experienceApp.dataset.detailUrlTemplate,
+      button.dataset.id,
+    );
+    if (action === "edit") {
+      openEditModal(button.dataset.id);
+      return;
+    }
     if (action === "delete" && !window.confirm("Yakin ingin menghapus pengalaman ini?")) {
       return;
     }
@@ -240,11 +260,12 @@ if (experienceApp) {
           buildItemUrl(experienceApp.dataset.starUrlTemplate, button.dataset.id),
           "POST",
         );
+      } else if (action === "finish") {
+        // PATCH cukup mengirim satu field, field lain tidak disentuh
+        await sendJson(detailUrl, "PATCH", { ended_at: new Date().toISOString() });
+        showToast("Berhasil", "Pengalaman ditandai selesai.", "success");
       } else {
-        await sendJson(
-          buildItemUrl(experienceApp.dataset.detailUrlTemplate, button.dataset.id),
-          "DELETE",
-        );
+        await sendJson(detailUrl, "DELETE");
         showToast("Berhasil", "Pengalaman berhasil dihapus.", "success");
       }
       await fetchExperiences();
@@ -255,9 +276,71 @@ if (experienceApp) {
     }
   });
 
-  function closeExperienceModal() {
-    const modal = document.getElementById("add-experience-modal");
+  function closeExperienceModal(modalId = "add-experience-modal") {
+    const modal = document.getElementById(modalId);
     if (modal && modal.matches(":popover-open")) modal.hidePopover();
+  }
+
+  // API mengirim waktu dalam UTC, sama seperti label "(UTC)" pada form
+  function formValuesFrom(experience) {
+    return {
+      title: experience.title,
+      description: experience.description,
+      category: experience.category,
+      thumbnail: experience.thumbnail ?? "",
+      ended_at: experience.ended_at ? experience.ended_at.slice(0, 16) : "",
+    };
+  }
+
+  function openEditModal(experienceId) {
+    const experience = experienceCache.get(experienceId);
+    const modal = document.getElementById("edit-experience-modal");
+    if (!experience || !experienceEditForm || !modal) return;
+
+    const values = formValuesFrom(experience);
+    EDITABLE_FIELDS.forEach((name) => {
+      experienceEditForm.elements[name].value = values[name];
+    });
+    experienceEditForm.dataset.id = experienceId;
+    modal.showPopover();
+  }
+
+  async function saveExperience(event) {
+    event.preventDefault();
+    const experienceId = experienceEditForm.dataset.id;
+    const original = formValuesFrom(experienceCache.get(experienceId));
+    const fields = new FormData(experienceEditForm);
+
+    // PATCH hanya mengirim field yang benar-benar berubah
+    const changes = {};
+    EDITABLE_FIELDS.forEach((name) => {
+      if (fields.get(name) !== original[name]) changes[name] = fields.get(name);
+    });
+    if ("ended_at" in changes) changes.ended_at = changes.ended_at || null;
+
+    if (Object.keys(changes).length === 0) {
+      closeExperienceModal("edit-experience-modal");
+      showToast("Tidak ada perubahan", "Belum ada data yang diubah.", "normal");
+      return;
+    }
+
+    const submitButton = experienceEditForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    try {
+      await sendJson(
+        buildItemUrl(experienceApp.dataset.detailUrlTemplate, experienceId),
+        "PATCH",
+        changes,
+      );
+      closeExperienceModal("edit-experience-modal");
+      showToast("Berhasil", "Perubahan pengalaman disimpan.", "success");
+      await fetchExperiences();
+    } catch (error) {
+      console.error("Error saving experience:", error);
+      showToast("Gagal menyimpan perubahan", error.message, "error");
+    } finally {
+      submitButton.disabled = false;
+    }
   }
 
   async function addExperience(event) {
@@ -268,8 +351,7 @@ if (experienceApp) {
     try {
       const fields = new FormData(experienceForm);
       const payload = Object.fromEntries(
-        ["title", "description", "category", "thumbnail", "ended_at"]
-          .map((name) => [name, fields.get(name)]),
+        EDITABLE_FIELDS.map((name) => [name, fields.get(name)]),
       );
       // input tanggal kosong harus dikirim sebagai null, bukan string kosong
       payload.ended_at = payload.ended_at || null;
@@ -288,5 +370,6 @@ if (experienceApp) {
   }
 
   if (experienceForm) experienceForm.addEventListener("submit", addExperience);
+  if (experienceEditForm) experienceEditForm.addEventListener("submit", saveExperience);
   fetchExperiences();
 }
