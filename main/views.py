@@ -11,13 +11,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from main.forms import ExperienceForm, ProjectForm
 from main.models import Experience, Project
-
-
-def _is_editor(user):
-    return (
-        user.is_authenticated
-        and user.groups.filter(name='Editor').exists()
-    )
+from main.permissions import is_editor as _is_editor
 
 
 def show_main(request):
