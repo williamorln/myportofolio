@@ -69,6 +69,7 @@ Proyek ini dibangun bertahap mengikuti rangkaian Tutorial dan Tugas Individu tia
 - **Individual Assignment 5** (5 Oktober 2026) &mdash; Menerapkan pola AJAX secara end-to-end pada Experience, termasuk filter status, pencarian debounce, modal tambah, star tanpa reload, reusable helper, dan perlindungan XSS.
 - **Tutorial 7** (3 November 2026) &mdash; Membangun REST API untuk Projects dengan Django REST Framework (serializer, permission class, API view, session auth + CSRF), lalu memindahkan halaman Projects ke API baru tersebut.
 - **Individual Assignment 6** (November 2026) &mdash; Menerapkan REST API dengan DRF pada Experience, lengkap dengan peran Editor (hanya boleh mengubah), pemilik (akses penuh), dan star untuk pengguna login, lalu memindahkan halaman Experience ke API tersebut, termasuk edit lewat modal dengan `PATCH`.
+- **Tutorial 10** (November 2026) &mdash; Menambahkan autentikasi token (`rest_framework.authtoken`), endpoint login dan logout untuk aplikasi mobile Flutter, serta CORS dengan `django-cors-headers`.
 
 ## Menjalankan Proyek Secara Lokal
 
@@ -232,7 +233,7 @@ Pola DRF dari Tutorial 7 diterapkan juga pada **Experience** di `/api/v1/experie
 | GET | `/api/v1/experience/<uuid>/` | Detail | ✔ | ✔ | ✔ | ✔ |
 | PUT / PATCH | `/api/v1/experience/<uuid>/` | Ubah | ✘ | ✘ | ✔ | ✔ |
 | DELETE | `/api/v1/experience/<uuid>/` | Hapus | ✘ | ✘ | ✘ | ✔ |
-| POST | `/api/v1/experience/<uuid>/star/` | Beri/batalkan star | ✘ (403) | ✔ | ✔ | ✔ |
+| POST | `/api/v1/experience/<uuid>/star/` | Beri/batalkan star | ✘ (401) | ✔ | ✔ | ✔ |
 
 Aturan peran dari Tugas 4 dipertahankan oleh `IsPortfolioOwnerOrEditorOrReadOnly` di `main/permissions.py`: pemilik (`is_superuser`) mengelola semuanya, sedangkan Editor, yaitu anggota grup `Editor`, hanya boleh PUT/PATCH. Status `is_staff` tidak memberi akses apa pun. Fungsi `is_editor` kini menjadi satu-satunya definisi peran, dipakai oleh API maupun view lama. Seperti pada Projects, permission diperiksa sebelum objek dicari, sehingga pengguna tanpa hak akses mendapat 403, bukan 404.
 
@@ -260,6 +261,37 @@ python manage.py test main
 ```
 
 `ProjectAPITest` dan `ExperienceAPITest` di `main/tests_api.py` menguji akses untuk pengunjung, pengguna biasa, Editor, dan pemilik; filter dan hasil kosong; validasi (judul spasi, judul hanya tag, kategori tidak dikenal, thumbnail `javascript:`, tanggal rusak); PUT vs PATCH; DELETE 204; field yang tidak boleh dipalsukan; toggle star; metode yang tidak diizinkan; penegakan CSRF pada request berbasis session; modal edit yang hanya muncul untuk pemilik dan Editor; Browsable API yang dapat dibuka; serta view lama yang dipastikan tidak memberi hak lebih luas daripada API. Pada tes penolakan, isi database ikut diperiksa, bukan hanya status HTTP-nya.
+
+## Autentikasi Token untuk Klien Mobile — Tutorial 10
+
+Aplikasi mobile Flutter ([myportofolio_mobile](https://github.com/williamorln/myportofolio_mobile)) tidak memakai cookie session, jadi API sekarang menerima autentikasi token lewat header `Authorization: Token <key>`. Halaman web tetap memakai session dan CSRF seperti sebelumnya.
+
+| Method | Endpoint | Autentikasi | Tujuan |
+| --- | --- | --- | --- |
+| POST | `/api/v1/auth/token/` | Publik | Menukar `username` dan `password` menjadi token (`{"token": "..."}`) |
+| POST | `/api/v1/auth/logout/` | Token atau session | Mencabut token yang dipakai (204 No Content) |
+
+Perubahan di sisi Django:
+
+- `rest_framework.authtoken` dan `corsheaders` ditambahkan ke `INSTALLED_APPS`, `CorsMiddleware` dipasang paling atas, lalu `python manage.py migrate` membuat tabel `authtoken_token`.
+- `DEFAULT_AUTHENTICATION_CLASSES` berisi `TokenAuthentication` lebih dulu, baru `SessionAuthentication`. Karena `TokenAuthentication` mengirim header `WWW-Authenticate`, request tanpa kredensial dijawab **401**, bukan 403. Pengguna yang sudah login tetapi tidak punya hak akses tetap mendapat 403. Empat tes lama yang mengharapkan 403 untuk tamu disesuaikan menjadi 401.
+- Dekorator `@authentication_classes([SessionAuthentication])` pada setiap view dihapus supaya pengaturan global berlaku. Kalau dibiarkan, request dengan token akan ditolak.
+- `10.0.2.2` ditambahkan ke `ALLOWED_HOSTS` agar emulator Android bisa menjangkau server lokal. CORS hanya dibuka untuk semua origin saat `PRODUCTION=False`, di production dibatasi lewat variabel `CORS_ALLOWED_ORIGINS` (hanya perlu kalau Flutter Web ikut di-host).
+- `api_logout` menghapus `request.auth` kalau ada. Kalau pemanggil memakai session, tidak ada token yang dihapus dan responsnya tetap 204.
+
+Mencoba lewat curl:
+
+```sh
+curl -X POST http://localhost:8000/api/v1/auth/token/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "<username>", "password": "<password>"}'
+
+curl -X POST http://localhost:8000/api/v1/projects/ \
+  -H "Authorization: Token <token>" -H "Content-Type: application/json" \
+  -d '{"title": "Contoh", "problem": "...", "solution": "...", "tech_stack": "Flutter"}'
+```
+
+`TokenAuthAPITest` di `main/tests_api.py` menguji login (berhasil dan sandi salah), pembacaan proyek tanpa token, POST oleh pemilik, penolakan oleh pengguna biasa (403), token kosong atau tidak valid (401), pencabutan token lewat logout, dan logout tanpa autentikasi.
 
 ## Pertanyaan Reflektif
 
@@ -320,3 +352,5 @@ Saya menggunakan **ChatGPT** sebagai referensi implementasi dan untuk membantu d
 Untuk Tutorial 7 dan Tugas 6, saya menggunakan **Claude Code** (Anthropic) sebagai AI assistant untuk membantu menyusun implementasi REST API (serializer, permission class, API view), integrasi halaman Projects dan Experience dengan API, test, debugging, serta draf dokumentasi dan jawaban refleksi di README.
 
 Saya tetap menentukan bagian portfolio yang dikembangkan, pembagian hak akses, desain antarmuka, isi konten, dan keputusan akhir implementasi. Seluruh perubahan saya tinjau dan sesuaikan dengan struktur project sebelum diuji dan di-commit.
+
+Pada Tutorial 10 saya menambahkan autentikasi token dan endpoint login/logout untuk aplikasi mobile. Claude Code (Anthropic) saya pakai hanya untuk debugging dan sebagai pemandu yang memberi ide tentang cara menyusun pengerjaannya.
