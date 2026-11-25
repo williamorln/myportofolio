@@ -15,7 +15,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "william-orlando-myportofolio.pws.cs.ui.ac.id"]
+# 10.0.2.2 adalah alamat komputer ini kalau dilihat dari emulator Android
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "10.0.2.2", "william-orlando-myportofolio.pws.cs.ui.ac.id"]
 
 CSRF_TRUSTED_ORIGINS = ["https://william-orlando-myportofolio.pws.cs.ui.ac.id"]
 
@@ -45,10 +46,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'main',
+    'corsheaders',
     'rest_framework',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -153,3 +157,23 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+
+# Klien mobile memakai token, halaman web tetap memakai session.
+# Token ditaruh di depan supaya request tanpa kredensial dijawab 401.
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+}
+
+# CORS hanya dibutuhkan kalau Flutter dijalankan di Chrome (web).
+# Lokal semua origin boleh, di production dibatasi lewat CORS_ALLOWED_ORIGINS.
+CORS_ALLOW_ALL_ORIGINS = not PRODUCTION
+if PRODUCTION:
+    CORS_ALLOWED_ORIGINS = [
+        origin.strip()
+        for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+        if origin.strip()
+    ]
